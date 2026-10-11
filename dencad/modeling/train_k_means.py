@@ -38,9 +38,9 @@ import numpy as np
 import pandas as pd
 from scipy.spatial.distance import cdist
 
-from dencast.modeling import windowing as W
-from dencast.modeling.evaluate import metrics
-from dencast.utils import Params, PARAMS_PATH, declared_categorical
+from dencad.modeling import windowing as W
+from dencad.modeling.evaluate import metrics
+from dencad.utils import Params, PARAMS_PATH, declared_categorical
 
 from pyspark.ml.functions import vector_to_array
 from pyspark.sql import functions as F

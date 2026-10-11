@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from loguru import logger
 import numpy as np
-import pandas as pd
 
 
 PARTS = ("train", "validation", "test")
@@ -19,7 +17,7 @@ def segments(y: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 
 
 def metrics(y: np.ndarray, score: np.ndarray,
-            threshold: Optional[float] = None, calculate_threshold_metrics: Optional[bool] = True) -> dict:
+            threshold: Optional[float] = None) -> dict:
     """Threshold-free scores, plus the ones that need a cut-off."""
     from sklearn.metrics import (average_precision_score, f1_score,
                                  precision_score, recall_score, roc_auc_score)
@@ -33,9 +31,6 @@ def metrics(y: np.ndarray, score: np.ndarray,
         "average_precision": float(average_precision_score(y, score)) if y.any()
         else None,
     }
-    if not calculate_threshold_metrics:
-        return out
-    
     if threshold is None:
         grid = np.quantile(score, np.linspace(0.50, 0.9999, 400))
         f1s = [f1_score(y, score >= t, zero_division=0) for t in grid]

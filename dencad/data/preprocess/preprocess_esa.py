@@ -11,7 +11,7 @@ from loguru import logger
 import numpy as np
 import pandas as pd
 
-from dencast.data.preprocess.preprocess import Preprocessor
+from dencad.data.preprocess.preprocess import Preprocessor
 
 NOMINAL, ANOMALY, RARE_EVENT = 0, 1, 2
 

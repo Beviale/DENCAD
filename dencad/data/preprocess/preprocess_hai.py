@@ -9,7 +9,7 @@ from loguru import logger
 import numpy as np
 import pandas as pd
 
-from dencast.data.preprocess.preprocess import Preprocessor
+from dencad.data.preprocess.preprocess import Preprocessor
 
 TIME = "timestamp"
 LABEL = "label"

@@ -6,8 +6,8 @@ from typing import Optional
 from loguru import logger
 import pandas as pd
 
-from dencast.data.process.process import Processor
-from dencast.utils import declared_categorical
+from dencad.data.process.process import Processor
+from dencad.utils import declared_categorical
 
 ANOMALY, RARE = "is_anomaly", "is_rare_event"
 MODES = {"esa_rare_anomalies": True}

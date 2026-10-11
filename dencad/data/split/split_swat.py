@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from dencast.data.split.split import Splitter
+from dencad.data.split.split import Splitter
 
 
 class SwatSplitter(Splitter):

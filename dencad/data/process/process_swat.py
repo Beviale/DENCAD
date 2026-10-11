@@ -2,16 +2,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from dencast.data.process.process import Processor
-from dencast.utils import declared_categorical
+from dencad.data.process.process import Processor
+from dencad.utils import declared_categorical
 
-
-class HaiProcessor(Processor):
+class SwatProcessor(Processor):
     def __init__(
         self,
-        split_dir: Path = Path("data/interim/hai/split"),
-        out_dir: Path = Path("data/processed/hai"),
-        name: str = "hai",
+        split_dir: Path = Path("data/interim/swat/split"),
+        out_dir: Path = Path("data/processed/swat"),
+        name: str = "swat",
         categorical: list[str] | None = None,
         pearson_max: float = 0.99,
         cramer_max: float = 0.99,
@@ -24,11 +23,11 @@ class HaiProcessor(Processor):
 
 
 def main() -> None:
-    HaiProcessor().run(overwrite=True)
+    SwatProcessor().run(overwrite=True)
 
 
 if __name__ == "__main__":
     main()
 
 
-__all__ = ["HaiProcessor"]
+__all__ = ["SwatProcessor"]

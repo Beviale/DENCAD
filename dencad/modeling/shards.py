@@ -1,22 +1,4 @@
-"""The data layout for the distributed fit: cluster rows written, never collected.
-
-What this module removes. Until now the windowed matrix came down to the driver with a
-`toPandas()`, and everything after it -- the placement, the builder, the shards the
-replicas trained on -- was assembled from that one numpy array. The fit itself was
-already sharded, so no process held all the subgraphs, but the driver still had to hold
-every window: on HAI that is 19,080 x 114 and harmless, on ESA it is the step that
-decides whether the run happens at all.
-
-Here the same shards are built by Spark and written as parquet partitioned by replica.
-A replica reads its own directory with pandas and assembles its own builder; the driver
-sees cluster counts and labels, and nothing with a row per window in it.
-
-The unit of everything below is the cluster, because that is the unit of the model: a
-query is scored inside exactly one cluster, so a task holding one cluster's members and
-the queries that landed in it can do the whole job with no further shuffle. Members
-travel with their neighbour lists rather than with an adjacency matrix -- the matrix is
-rebuilt locally, where the node ids are small.
-"""
+"""The data layout for the distributed fit."""
 
 from __future__ import annotations
 
@@ -28,13 +10,7 @@ import numpy as np
 
 
 def assign_by_count(counts: dict[int, int], world_size: int) -> dict[int, int]:
-    """Clusters to replicas, the largest first and always to the lightest replica.
-
-    Not a stride: HAI's clusters run from 17 members to 351, so handing out every
-    fourth one would leave a replica with several times another's work and the
-    all-reduce waiting on it at every step. Greedy on the example count balances to
-    within a tenth here.
-    """
+    """Clusters to replicas, the largest first and always to the lightest replica."""
     tally = {k: 0 for k in range(world_size)}
     where: dict[int, int] = {}
     for c in sorted(counts, key=lambda x: -counts[x]):
@@ -183,7 +159,7 @@ def read_shard(out_dir: Path, rank: int, min_similarity: float,
     """
     import pandas as pd
 
-    from dencast.modeling.subgraphs import egos_from_rows
+    from dencad.modeling.subgraphs import egos_from_rows
 
     out_dir = Path(out_dir)
 

@@ -4,12 +4,9 @@ from __future__ import annotations
 
 import os
 import sys
-from functools import reduce
 from pathlib import Path
 from typing import Optional, Sequence
 
-import numpy as np
-import pandas as pd
 import math
 
 from loguru import logger
@@ -98,87 +95,6 @@ def _to_seconds(df, column: str = INDEX):
     if dict(df.dtypes)[column] == "bigint":
         return F.col(column) / F.lit(1_000_000_000)
     return F.unix_timestamp(F.col(column))
-
-
-def window_pandas(df, columns: list[str], seconds: int, label: str,
-                  categorical: list[str]):
-    numeric = [c for c in columns if c not in set(categorical)]
-    
-    base = df.withColumn("_w", F.floor(_to_seconds(df) / seconds) * seconds)
-
-    schema_fields = [
-        StructField("_w", LongType(), True),
-        StructField(label, DoubleType(), True),
-        StructField("_rows", LongType(), True)
-    ]
-    
-    names = []
-    for c in numeric:
-        mean_col = f"{c}_mean"
-        std_col = f"{c}_std"
-        names.extend([mean_col, std_col])
-        schema_fields.append(StructField(mean_col, DoubleType(), True))
-        schema_fields.append(StructField(std_col, DoubleType(), True))
-        
-    if categorical:
-        filled = [f"{c}_{k}" for c in categorical for k in ("mode", "entropy", "nunique", "maxprop")]
-        names.extend(filled)
-        for col_name in filled:
-            schema_fields.append(StructField(col_name, DoubleType(), True))
-            
-    out_schema = StructType(schema_fields)
-
-    def process_window(key: tuple, pdf: pd.DataFrame) -> pd.DataFrame:
-        w_val = key[0]
-        row_count = len(pdf)
-        
-        row_dict = {
-            "_w": w_val,
-            label: float(pdf[label].max()) if label in pdf else 0.0,
-            "_rows": row_count
-        }
-        
-        for c in numeric:
-            vals = pdf[c].dropna()
-            if len(vals) > 0:
-                row_dict[f"{c}_mean"] = float(vals.mean())
-                std_val = float(vals.std(ddof=0))
-                row_dict[f"{c}_std"] = 0.0 if np.isnan(std_val) else std_val
-            else:
-                row_dict[f"{c}_mean"] = 0.0
-                row_dict[f"{c}_std"] = 0.0
-                logger.warning(f"The numeric column {c} does not contain any value!")
-
-        if categorical:
-            for c in categorical:
-                s = pdf[c].dropna()
-                if len(s) == 0:
-                    logger.warning(f"The categorical column {c} does not contain any value!")
-                    row_dict[f"{c}_mode"] = 0.0
-                    row_dict[f"{c}_entropy"] = 0.0
-                    row_dict[f"{c}_nunique"] = 0.0
-                    row_dict[f"{c}_maxprop"] = 0.0
-                else:
-                    counts = s.value_counts()
-                    n_total = counts.sum()
-                    
-                    row_dict[f"{c}_mode"] = float(counts.idxmax())
-                    row_dict[f"{c}_nunique"] = float(len(counts))
-                    row_dict[f"{c}_maxprop"] = float(counts.max() / n_total)
-                    
-                    probs = counts / n_total
-                    entropy_val = -float((probs * np.log(probs)).sum())
-                    if np.isnan(entropy_val):                     
-                        logger.warning(f"The calculated entropy is not valid!")
-                    row_dict[f"{c}_entropy"] = 0.0 if np.isnan(entropy_val) else entropy_val
-
-        return pd.DataFrame([row_dict])
-
-    out = base.groupBy("_w").applyInPandas(process_window, schema=out_schema)
-
-    out = out.withColumn(INDEX, F.timestamp_seconds("_w")).drop("_w")
-
-    return out, names
 
 
 def sampling_period(df, column: str = INDEX) -> int:
@@ -424,5 +340,5 @@ def prepare(spark, files: dict[str, Path], categorical: Sequence[str],
 
 
 __all__ = ["PARTS", "INDEX", "SCALE_SKIP", "session", "discover", "feature_columns",
-           "label_column", "window", "window_pandas", "scalable", "window_statistics",
-           "apply_scaling", "prepare"]
+           "label_column", "window", "scalable", "window_statistics",
+           "apply_scaling", "prepare", "number_rows", "sampling_period"]

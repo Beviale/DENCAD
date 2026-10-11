@@ -174,46 +174,12 @@ dencad:
   # the standard correction (Goyal et al., 2017) and stays; the measurement is gone.
   scale_learning_rate: true
 
-  # Validation and test scored on the task that owns each query's cluster. A query is
-  # scored inside one cluster and inside nothing else, so grouping the queries by the
-  # cluster they landed in puts each task's work in front of it with no shuffle of the
-  # subgraphs -- and their subgraphs are then never built on the driver at all. The
-  # builder travels by broadcast so the worker calls the same `build`, which keeps the
-  # scores identical rather than nearly so.
-  scoring_by_cluster: true
-
-  # Place every query -- training, validation and test -- over Spark tasks: the pool of
-  # eligible objects is broadcast, the queries are split, each task reduces its block to
-  # one answer per query. The answers are identical to the in-process version, verified
-  # to the object on all 19,082 of HAI's training queries.
-  placement_in_spark: true
-
-  # How the data moves, and now also where it lives. With `replicas` above 1 this picks
-  # the distributed layout: the windowed matrix is never collected, the shards are
-  # written by the tasks as parquet partitioned by replica, and each replica reads its
-  # own and builds its own subgraphs. The driver sees the labels, one count per cluster
-  # and one score per window. Verified against the layout that assembles the shards from
-  # a matrix on the driver: identical graph, identical shard sizes, subgraphs equal to
-  # the last bit on 400 sampled queries, and test AP 0.5887 against 0.5857.
-  #
-  # false keeps the earlier layout, which is what a single-process fit needs anyway.
-  # Both split the work; only one of them also splits the data. true splits both sides
-  # of the placement across tasks:
-  # the eligible pool is cut into blocks and each task sees one block of queries
-  # against one block of pool, reporting partial maxima that a second pass reduces;
-  # and a cluster's members travel as rows to the task that owns that cluster. false
-  # sends a copy of everything to every executor instead.
-  #
-  # The answers are the same -- verified to the object on all 19,082 of HAI's training
-  # queries, and the scores bit for bit identical on validation -- and the broadcast is
-  # faster here: 14.2 s against 18.5 s for the placement, 17.4 s against 20.3 s for the
-  # scoring. It is set to true anyway, because the broadcast has a ceiling that is not
-  # a slowdown: the day the training matrix does not fit in one executor it stops.
-  #
-  # The model's weights are broadcast in both modes. A model is small by definition and
-  # every task needs all of it; that is not the same compromise as copying the data.
-  partition_data: true
-
+  # There is one execution path and these three settings used to choose between it and
+  # the earlier ones, which are gone: `scoring_by_cluster`, `placement_in_spark` and
+  # `partition_data`. What they selected is now unconditional -- the rows stay in Spark,
+  # the placement is a blocked argmax over tasks, the shards are written as parquet
+  # partitioned by replica, and every part is scored on the task that owns its cluster.
+  # The driver sees the labels, one count per cluster and one score per window.
   seed: 42
   workers: 4
 

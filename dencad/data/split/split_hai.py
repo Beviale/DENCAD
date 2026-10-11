@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from dencast.data.split.split import Splitter
+from dencad.data.split.split import Splitter
 
 VALID_START = "2022-08-17 00:00:01"
 TEST_START = "2022-08-18 08:00:01"
