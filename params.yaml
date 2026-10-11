@@ -1,71 +1,26 @@
 kmeans:
   k_values: [2, 4, 8, 16, 32, 64]
-  # Readings per window, not seconds. The interval is `window_steps` times the
-  # sampling period, which is measured from the data: 1 s on SWaT and HAI, 18 s on ESA,
-  # where the preprocess resamples onto an 18 s grid. In seconds the same parameter
-  # meant three different amounts of data -- 600 s of ESA is 33 readings, not 600 --
-  # and the coverage check below had to infer the rate to say what a full window holds.
-  #
-  # The bucket is still an interval of wall-clock time, so an outage leaves a thin
-  # window rather than a full-looking one built from readings five days apart: HAI joins
-  # two recordings 457,201 s apart and ESA has 167 holes.
   window_steps:
-    swat: 60      # 60 s
-    hai: 30       # 30 s
-    esa: 33       # 594 s, where it used to be declared as 600
-  # A window is a bucket of wall-clock time, so rows going missing does not remove the
-  # bucket: whatever survives still becomes a window. Below this fraction of
-  # `window_steps` -- which is what a complete window holds, by definition -- the
-  # window is dropped. It bites on ESA, where
-  # `process_esa.prepare_train` deletes the positive rows for one-class training and
-  # left 220 training windows under half coverage, 18 of them built from a single
-  # reading -- every channel's spread and entropy zero by arithmetic, right on the edge
-  # of an anomaly. SWaT loses 3 windows to a logging gap and a split boundary, HAI 4.
-  # Read by K-Means and by DENCAD both, like `window_steps` beside it.
+    swat: 60     
+    hai: 30       
+    esa: 33       
   min_coverage: 0.5
   seed: 42
   max_iter: 50
   contaminated_refit: false
-  # The window features are not on a common scale: `process` z-scores the raw columns,
-  # so `_mean` inherits unit spread, while `_std`, `_entropy`, `_nunique` and `_maxprop`
-  # are built afterwards and three of them are bounded by construction. Unscaled, a
-  # Euclidean distance reads 90% of its variance from `_mean` on SWaT and 95.8% on HAI,
-  # and the four categorical summaries contribute 0.0% there. `_mode` is excluded from
-  # the z-score either way: it is a nominal level, not a quantity.
   scale_windows: true
   workers: 4
 
-# DENCAD: the anomaly detector built on DENCAST's clusters. The graph and the
-# clustering are the paper's; scoring a window by how badly its cluster
-# reconstructs it is the extension, and these settings govern both.
+# DENCAD: the anomaly detector built on DENCAST's clusters.
 dencad:
   # --- neighbourhood graph (LSH) ---
-  # `bits` is r in the paper: how many random hyperplanes carve the signature, so
-  # 2**bits buckets. `band` is how far down each sorted list an object looks and
-  # `permutations` how many independent orderings it gets; recall rises with both, and
-  # so does the candidate count, linearly.
   bits: 16
   permutations: 10
   band: 20
-  # The cosine an edge has to clear. Per dataset, and per feature space: standardising
-  # the windows centres every feature on zero, so the vectors leave the positive cone
-  # they used to sit in and the candidate cosines spread out. On HAI they now run from
-  # -0.67 to +0.99 with a median of +0.196, where the old 0.87 keeps 3,070 candidates
-  # out of 2,777,541 and the graph collapses.
-  #
-  # Chosen by edge density rather than by an absolute cosine, which is what transfers
-  # between spaces: the HAI graph that worked kept 2.2% of its candidates. HAI's p99 is
-  # 0.7367 and gives 27,787 edges, 1,256 core objects and 94 clusters whose largest
-  # holds 1.8% of the nodes. p97.5 already collapses into one cluster at 55%.
-  # SWaT measured in the scaled space too, and it behaves unlike HAI: its candidate
-  # cosines stay high (median +0.7303, max 1.0000 over 422,639 pairs on 8,280 windows),
-  # so standardising did not spread them out the way it did on HAI. Chosen by the same
-  # density rule, 1.5 edges per node: p97.5 = 0.9858 gives 10,566 edges, 1.3 per node,
-  # where the old 0.99 gives 5,206, 0.6 per node.
   min_similarity:
     swat: 0.9858
     hai: 0.7367
-    esa: 0.95        # NOT yet remeasured in the scaled space, unlike swat and hai
+    esa: 0.95    
 
   # --- density and clustering ---
   min_pts: 10                 # degree for a core object, DBSCAN's minPts
@@ -73,169 +28,51 @@ dencad:
   attach_to: clustered        # core | clustered | any: what a new object may attach to
 
   # --- contextual subgraphs ---
-  # null keeps the whole cluster, and the reason is structural rather than measured.
-  # A cap keeps the members whose cosine with the query is highest, then builds the
-  # adjacency over those -- a geometric selection applied to an object the model reads
-  # structurally. A member can be the bridge on a two-hop path to the centre and have
-  # a mediocre cosine, so cutting it does not reduce the context, it rewrites which
-  # paths reach the centre at all. The parameter does not mean what its name suggests.
-  #
-  # (An earlier note here claimed a cap of 48 caught 11 of 19 HAI attack segments
-  # against 15 for the whole cluster. That measurement predates the seeding fix, when
-  # the weights were initialised from whatever entropy torch had picked up, and the
-  # segment count was later measured to swing by 2 of 19 under perturbations far
-  # smaller than this. It is not evidence either way.)
-  #
-  # The cap worth having would be by hops, not by members: with `layers: 2` only nodes
-  # within two hops can influence the centre at all, so a two-hop neighbourhood scores
-  # identically to the whole cluster -- not approximately, identically -- provided the
-  # degrees for the normalisation still come from the full cluster. Today the whole
-  # cluster costs 1.5 s for 27,000 subgraphs on HAI, so there is nothing to buy; ESA's
-  # 78,308 examples are where it would start to matter.
-  max_members: null
-  # Keep only the nodes within this many hops of the centre, and set it to `layers`:
-  # with L graph convolutions the centre's output is a function of its L-hop ball and
-  # of nothing outside it, so cutting there removes computation and changes no number.
-  # Verified on HAI's own clusters -- all 3,841 validation windows scored identically
-  # at fixed weights, largest difference 4.8e-07 against a score spread of 28 -- and on
-  # built cases where the pruning bites hard (a chain of 60 nodes comes down to 3).
-  #
-  # It is not a small saving: the node-rows fed to the model drop from 276,713 to
-  # 30,544, 11% of before, because the ball starts at the query and the query attaches
-  # only to the members above `min_similarity`, often one or two. The median subgraph
-  # goes from 42 nodes to 5. On HAI that buys time; on ESA, where a low threshold
-  # collapsed the graph into one cluster of 19,031 and asked for a 1.35 GiB adjacency,
-  # it is the difference between running and not.
-  #
-  # Below `layers` it is refused rather than approximated. The end-to-end metrics do
-  # move a little -- test AP 0.5754 against 0.5887 -- and not because the model
-  # changed: `_batches` sorts the examples by node count, so different sizes put
-  # different examples in a batch and the gradient sequence is another one. The
-  # stopping score moved by 0.002 on the same change.
-  max_hops: 2
-  # false keeps the centre's own attributes in the input, so the latent is what stops
-  # the model copying them and the error measures distance from the learned manifold.
-  # true hides them, and the error measures inconsistency with the neighbourhood.
-  mask_centre: false
+  max_members: null  # null is the whole cluster
+  max_hops: 2  
+  mask_centre: false # hide the centre's own attributes, or keep them
 
   # --- autoencoder ---
   hidden: 64
   latent: 16
-  layers: 2                   # beyond 3 the representations over-smooth
+  layers: 2                  
   learning_rate: 0.001
   batch_size: 128
-  # 60 was binding: the fit that reached the best validation AP so far peaked around
-  # epoch 50 and stopped by patience at 58. With the AP as the watched quantity the cap
-  # has to sit above where it stops on its own.
   max_epochs: 150
-  # 8 was too tight for a signal that moves by 0.004 between epochs: the same code and
-  # data, with the examples in a different order, stopped at epoch 9 in one run and ran
-  # to 60 in another. 20 is what the best run used.
   patience: 20
-  # What the fit stops on: "validation_ap" or "held_out_loss".
-  #
-  # Measured across configurations: the held-out reconstruction loss ran from 0.306 to
-  # 0.411 while the test average precision ran from 0.525 to 0.569, and the two did not
-  # move together -- the best-converged model was the worst detector. The reconstruction
-  # error separates an anomaly only while the learned manifold is tight enough that a
-  # point outside it reconstructs badly, and a better-converged autoencoder of the same
-  # capacity generalises further, until it reconstructs the attacks too. Past that point
-  # the loss optimises against the task, and nothing in the loss says where the point is.
-  #
-  # Three of those four configurations were multi-replica fits taken before the DDP
-  # forward was corrected, so they were four independent models rather than one; the
-  # finding rests on the spread, not on the ranking. What has been measured since, with
-  # the gradients actually shared: stopping on validation AP reaches test AP 0.5887
-  # where the single-process fit stopping on the loss reached 0.5691.
-  #
-  # Watching validation makes the fit weakly supervised. The threshold and
-  # `min_similarity` already were; this should be stated rather than left for a reader
-  # to assume that "one-class" means the labels touched nothing before the threshold.
   early_stopping: validation_ap
-  holdout: 0.1                # slice of train for early stopping, never validation
+  holdout: 0.1                # slice of train for early stopping
   train_examples: null        # null uses every training window
-
-  scale_windows: true    # see the note in `kmeans`
-  # 1 fits the autoencoder in this process. Above that, that many gloo replicas
-  # share gradients through torch.distributed -- the same synchronous SGD Horovod
-  # performs, which Spark cannot do because its tasks have no channel between them.
-  # It does NOT reproduce the single-process weights, and on one machine it is not
-  # faster -- 4 replicas measured 1.15 s an epoch against 1.05 s, because the
-  # all-reduce on a few thousand parameters has nothing to amortise. It is set above 1
-  # anyway: the fit is then the only step left that Spark could not host, and nothing
-  # holds all 3.1 GB of subgraphs, because each replica builds its own share.
+  scale_windows: true    
   replicas: 4
-  # Adam's rate times the replica count. `batch_size` is per replica, so N of them make
-  # the effective batch N times larger and the optimiser takes N times fewer steps an
-  # epoch. The figure that used to be quoted here -- an unscaled 4-replica fit at
-  # held-out 0.41293 against 0.34641 for one process -- was measured before the DDP
-  # forward was corrected, when the replicas were not sharing gradients at all, so it
-  # argued for the rule from a run that had no effective batch of 4N. The rule itself is
-  # the standard correction (Goyal et al., 2017) and stays; the measurement is gone.
   scale_learning_rate: true
-
-  # There is one execution path and these three settings used to choose between it and
-  # the earlier ones, which are gone: `scoring_by_cluster`, `placement_in_spark` and
-  # `partition_data`. What they selected is now unconditional -- the rows stay in Spark,
-  # the placement is a blocked argmax over tasks, the shards are written as parquet
-  # partitioned by replica, and every part is scored on the task that owns its cluster.
-  # The driver sees the labels, one count per cluster and one score per window.
   seed: 42
   workers: 4
 
   # ------------------------------------------------------------------ grid search
-  # Two values per hyperparameter. The scalars above stay scalars because the
-  # pipeline reads them as single values; this section is the menu a search script
-  # reads, and the first entry of each pair is what is set above.
-  #
-  # A FULL FACTORIAL IS NOT RUNNABLE. Sixteen parameters at two values each is
-  # 2**16 = 65,536 fits, and one fit of HAI takes three to six minutes: months. Two
-  # tractable readings of this section:
-  #   one at a time  -- hold the baseline, change one parameter, 16 runs, ~1.5 hours;
-  #   random sample  -- draw 30 to 50 combinations, which finds interactions that
-  #                     one-at-a-time cannot but needs a day.
-  #
-  # SELECT ON validation AP OR ROC-AUC, NOT ON SEGMENTS. The segment count was
-  # measured to swing by 2 of 19 under input changes of 1e-6, because the LSH is the
-  # sign of a dot product and the clustering is a threshold; AP moved by 0.003 and
-  # ROC-AUC by 1e-4 under the same perturbation. A search that ranks on segments
-  # ranks on noise.
   grid:
-    # --- neighbourhood graph. Recall rises with all three, and so does the
-    # candidate count; 10 permutations at band 20 were measured to find 30% of the
-    # true edges on HAI.
     bits: [16, 24]
     permutations: [10, 20]
     band: [20, 50]
-    # Per dataset, and only HAI has been measured in the scaled space: p99 is 0.7367
-    # and gives 94 clusters whose largest holds 1.8% of the nodes, while p99.9 is
-    # 0.8741. p97.5 already collapses into one cluster at 55%, so the usable range is
-    # narrow and sits high. SWaT and ESA need their percentiles measured before they
-    # have a pair worth searching -- the values below are placeholders from the
-    # unscaled space and will produce a near-empty graph.
+    
     min_similarity:
       hai: [0.7367, 0.8741]
-      # SWaT's p97.5 and p99, measured in the scaled space: 1.3 and 0.5 edges per node.
       swat: [0.9858, 0.9910]
-      esa: [0.95, 0.95]       # MEASURE FIRST
+      esa: [0.95, 0.90]   
 
     # --- density and clustering
-    min_pts: [10, 5]                  # lower makes more core objects, so larger clusters
-    label_change_rate: [0.05, 0.01]   # lower propagates further before stopping
-    attach_to: [clustered, core]      # border objects carry a cluster id too
+    min_pts: [10, 5]                  
+    label_change_rate: [0.05] 
 
-    # --- contextual subgraphs. The two choices never measured reliably, because
-    # every comparison of them predates the seeding fix.
-    max_members: [null, 128]          # null is the whole cluster; largest here is 351
-    mask_centre: [false, true]        # hide the centre's own attributes, or keep them
+    # --- contextual subgraphs. 
+    max_members: [null]          # null is the whole cluster
+    mask_centre: [false]        # hide the centre's own attributes, or keep them
 
     # --- autoencoder
-    hidden: 64
-    latent: 16                   # the bottleneck: tighter forces reliance on the
-                                      # neighbourhood instead of copying the centre
-    layers: 2                  # 3 is the limit before the representations
-                                      # over-smooth and the centre stops standing out
+    hidden: [64, 128]  
+    latent: [16, 32]                                      
+    layers:  [2, 3]                                            
     learning_rate: [0.001, 0.003]
     batch_size: 128
-    max_epochs: 150
-    patience: [20, 40]
+    max_epochs: 200
+    patience: [20]

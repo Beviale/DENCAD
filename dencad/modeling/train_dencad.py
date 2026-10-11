@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import shutil
 import tempfile
+import argparse
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -29,8 +30,8 @@ from dencad.modeling.placement import nearest_grid_frames
 from dencad.utils import Params, PARAMS_PATH, declared_categorical
 from dencad.modeling.shards import query_frame
 from dencad.modeling.subgraphs import egos_from_rows
-from dencad.modeling import shards as S
 from dencad.modeling.parallel import fit_shards
+from dencad.modeling import shards as S
 
 PARTS = ("train", "validation", "test")
 
@@ -66,8 +67,7 @@ _NET = None
 
 
 def _net_class():
-    """The autoencoder as a real 'nn.Module', with the convolution in its 'forward'.
-    """
+    """The autoencoder as a real 'nn.Module', with the convolution in its 'forward'."""
     global _NET
     if _NET is not None:
         return _NET
@@ -235,8 +235,7 @@ def _place(spark, win, pool, features, exclude_self: bool = False):
 
 def _score_frames(spark, win, placed, clustered, members, model, cfg, features,
                   min_similarity) -> np.ndarray:
-    """Score every window of one part on the task that owns the cluster it landed in.
-    """
+    """Score every window of one part on the task that owns the cluster it landed in."""
 
     d, conf = model.d, dict(cfg)
     cap, min_sim = cfg["max_members"], float(min_similarity)
@@ -273,11 +272,20 @@ def _score_frames(spark, win, placed, clustered, members, model, cfg, features,
 
 
 def train_dencad(split_dir: Path | str,
-                  reports_dir: Path | str = Path("reports"),
-                  window_steps: Optional[int] = None,
-                  min_similarity: Optional[float] = None,
-                  **overrides) -> dict:
-    """Run the chain end to end and write one report. Returns it."""
+                 reports_dir: Path | str = Path("reports"),
+                 window_steps: Optional[int] = None,
+                 min_similarity: Optional[float] = None,
+                 stage: str = "select",
+                 selected: Optional[dict] = None,
+                 **overrides) -> dict:
+   
+    if stage not in ("select", "final"):
+        raise ValueError(f"stage must be 'select' or 'final', not {stage!r}")
+    if stage == "final":
+        if not selected:
+            raise ValueError("stage='final' needs the entry a search chose: its "
+                             "configuration, its epoch count and its threshold")
+        overrides = {**selected.get("config", {}), **overrides}
     from pyspark.sql import functions as F
 
     cfg = {**DEFAULTS, **dencad_config(), **{k: v for k, v in overrides.items()
@@ -333,7 +341,8 @@ def train_dencad(split_dir: Path | str,
         declared = declared_categorical(dataset)
         win, labels, features, label = {}, {}, None, None
         scaling, period = None, None
-        for part in PARTS:
+        parts = PARTS if stage == "final" else ("train", "validation")
+        for part in parts:
             raw = spark.read.parquet(str(files[part].resolve()))
             columns = W.feature_columns(raw.columns)
             label = W.label_column(raw.columns)
@@ -355,7 +364,18 @@ def train_dencad(split_dir: Path | str,
                         labels[part].mean())
 
         replicas = int(cfg["replicas"])
-        on_ap = cfg["early_stopping"] == "validation_ap"
+        on_ap = stage == "select"
+        if stage == "final":
+            cfg["fixed_epochs"] = int(selected["epoch"])
+            extra = win["validation"].filter(F.col(label) == 0)
+            n_extra = extra.count()
+            win["train"] = W.number_rows(
+                win["train"].drop(ID).unionByName(extra.drop(ID)))
+            got = win["train"].select(ID, label).orderBy(ID).toPandas()
+            labels["train"] = (got[label].to_numpy() != 0).astype("uint8")
+            logger.info("refit: {:,} normal windows of validation join the graph, "
+                        "{:,} rows in all, {} epochs, no stopping",
+                        n_extra, len(labels["train"]), cfg["fixed_epochs"])
 
         # ------------------------------------------------ graph over the train
 
@@ -380,6 +400,7 @@ def train_dencad(split_dir: Path | str,
         clustered = state.filter(F.col(C.CLUSTER) != F.lit(C.NOISE))
 
         # ------------------------------------------------ contextual subgraphs
+      
         take = cfg["train_examples"]
         model = GraphAutoEncoder(len(features), cfg)
 
@@ -411,7 +432,7 @@ def train_dencad(split_dir: Path | str,
                        validation=vqueries,
                        meta={"dataset": dataset,
                              "min_similarity": float(min_similarity)})
-        state_dict, held_out = fit_shards(
+        state_dict, held_out, best_epoch = fit_shards(
             shard_dir, cfg, len(features), replicas,
             min_similarity=min_similarity, on_ap=on_ap)
         model.net.load_state_dict(state_dict)
@@ -423,18 +444,22 @@ def train_dencad(split_dir: Path | str,
         scores = {"train": _score_frames(spark, win["train"], placed, clustered,
                                          members, model, cfg, features,
                                          min_similarity)}
-        for part in ("validation", "test"):
+        for part in parts[1:]:
             scores[part] = _score_frames(
                 spark, win[part], _place(spark, win[part], pool, features),
                 clustered, members, model, cfg, features, min_similarity)
     finally:
         spark.stop()
 
-    carried = metrics(labels["validation"], scores["validation"])["threshold"]
-    logger.info("threshold fixed on validation at {:.6f}", carried)
+    if stage == "select":
+        carried = metrics(labels["validation"], scores["validation"])["threshold"]
+        logger.info("threshold chosen on validation at {:.6f}", carried)
+    else:
+        carried = float(selected["threshold"])
+        logger.info("threshold carried from the selection at {:.6f}", carried)
 
     results = {}
-    for part in PARTS:
+    for part in parts:
         m = metrics(labels[part], scores[part],
                     threshold=carried if part != "validation" else None)
         results[part] = m
@@ -450,7 +475,9 @@ def train_dencad(split_dir: Path | str,
             "score": "reconstruction error of the centre of its contextual subgraph",
             "threshold": float(carried),
             "threshold_chosen_on": "validation, maximising F1",
+            "stage": stage,
             "stopping_score": held_out,
+            "epoch": int(best_epoch),
             **{k: cfg[k] for k in ("bits", "permutations", "band", "min_pts",
                                    "label_change_rate", "attach_to", "max_members",
                                    "max_hops",
@@ -467,8 +494,8 @@ def train_dencad(split_dir: Path | str,
             "window_seconds": int(window_steps) * int(period),
             "features": len(features), "feature_columns": features,
             "label_column": label, "window_scaling": scaling,
-            "windows": {p: int(len(labels[p])) for p in PARTS},
-            "base_rate": {p: float(labels[p].mean()) for p in PARTS},
+            "windows": {p: int(len(labels[p])) for p in parts},
+            "base_rate": {p: float(labels[p].mean()) for p in parts},
         },
         "graph": {"edges": int(n_edges), "candidates": int(n_candidates),
                   "cores": int(n_cores), **summary},
@@ -477,15 +504,14 @@ def train_dencad(split_dir: Path | str,
             timespec="seconds")},
     }
     reports_dir.mkdir(parents=True, exist_ok=True)
-    out = reports_dir / f"dencad_{split_dir.name}_{window_steps}steps.json"
+    out = (reports_dir /
+           f"dencad_{split_dir.name}_{window_steps}steps_{stage}.json")
     out.write_text(json.dumps(report, indent=2), encoding="utf-8")
     logger.success("report written to {}", out)
     return report
 
 
 def main() -> None:
-    import argparse
-
     ap = argparse.ArgumentParser(
         description="DENCAD: anomaly detection over DENCAST clusters, on windowed telemetry.")
     ap.add_argument("split_dir", type=Path,
@@ -511,6 +537,12 @@ def main() -> None:
                     help="epochs without improvement before the fit stops")
     ap.add_argument("--max-epochs", type=int, default=None)
     ap.add_argument("--replicas", type=int, default=None)
+    ap.add_argument("--stage", choices=("select", "final"), default="select",
+                    help="select: validation only, the test is never read. "
+                         "final: refit on train + validation's normals, score the test")
+    ap.add_argument("--selected", type=Path, default=None,
+                    help="for --stage final: the search report to take the winning "
+                         "configuration, epoch count and threshold from")
     ap.add_argument("--workers", type=int, default=None)
     a = ap.parse_args()
     train_dencad(a.split_dir, a.reports_dir, a.window_steps, a.min_similarity,
@@ -519,7 +551,9 @@ def main() -> None:
                   train_examples=a.train_examples, workers=a.workers,
                   patience=a.patience, max_epochs=a.max_epochs,
                   max_hops=a.max_hops,
-                  replicas=a.replicas)
+                  replicas=a.replicas, stage=a.stage,
+                  selected=(json.loads(a.selected.read_text(encoding="utf-8"))["best"]
+                            if a.selected else None))
 
 
 if __name__ == "__main__":

@@ -15,12 +15,13 @@ import torch.multiprocessing as mp
 from torch.nn.parallel import DistributedDataParallel
 
 from dencad.modeling.evaluate import metrics
-from dencad.modeling.train_dencad import GraphAutoEncoder, batches
 from dencad.modeling.shards import read_shard
 
 
 def _score_local(replica, forward, egos, cfg, d) -> np.ndarray:
     """Reconstruction error of each subgraph, with the replica's own weights."""
+    from dencad.modeling.train_dencad import batches
+
 
     out = np.full(len(egos), np.nan)
     if not len(egos):
@@ -53,6 +54,8 @@ def _worker(rank: int, world_size: int, source: dict, out: str, cfg: dict,
 
     os.environ.setdefault("MASTER_ADDR", "127.0.0.1")
     os.environ.setdefault("MASTER_PORT", "29517")
+    from dencad.modeling.train_dencad import GraphAutoEncoder, batches
+
     dist.init_process_group("gloo", rank=rank, world_size=world_size)
     try:
         shard = _read_shard(rank, source, cfg)
@@ -92,14 +95,18 @@ def _worker(rank: int, world_size: int, source: dict, out: str, cfg: dict,
         def forward(X, A_hat, centre):
             return replica(X, A_hat, centre)
 
-        best, waited, state = -np.inf, 0, None
+        best, waited, state, best_epoch = -np.inf, 0, None, 0
         sign = 1.0 if on_ap else -1.0
+
+        fixed = cfg.get("fixed_epochs")
+        epochs = int(fixed) if fixed else int(cfg["max_epochs"])
         label = "validation AP" if on_ap else "held-out"
         if rank == 0:
-            logger.info("  stopping on {}", label)
+            logger.info("  {} epochs, {}", epochs,
+                        f"stopping on {label}" if not fixed else "no stopping")
         order = np.arange(len(fitbatches))
         shuffler = np.random.default_rng(cfg["seed"] + rank)
-        for epoch in range(1, cfg["max_epochs"] + 1):
+        for epoch in range(1, epochs + 1):
             replica.train()
             shuffler.shuffle(order)
             for j in order[:steps]:
@@ -118,6 +125,15 @@ def _worker(rank: int, world_size: int, source: dict, out: str, cfg: dict,
                     raise RuntimeError(
                         f"rank {rank} drifted {drift:.3e} from rank 0 after one epoch: "
                         "the gradients are not being averaged")
+
+            if fixed:
+                if rank == 0:
+                    if epoch % 5 == 0 or epoch == 1:
+                        logger.info("  epoch {:>3} of {}", epoch, epochs)
+                    state = {k: v.clone()
+                             for k, v in replica.module.state_dict().items()}
+                    best_epoch = epoch
+                continue
 
             replica.eval()
             if on_ap:
@@ -141,7 +157,7 @@ def _worker(rank: int, world_size: int, source: dict, out: str, cfg: dict,
             if rank == 0 and (epoch % 5 == 0 or epoch == 1):
                 logger.info("  epoch {:>3}: {} {:.5f}", epoch, label, held)
             if sign * held > best + 1e-5:
-                best, waited = sign * held, 0
+                best, waited, best_epoch = sign * held, 0, epoch
                 if rank == 0:
                     state = {k: v.clone()
                              for k, v in replica.module.state_dict().items()}
@@ -153,15 +169,17 @@ def _worker(rank: int, world_size: int, source: dict, out: str, cfg: dict,
                     break
 
         if rank == 0:
-            torch.save({"state": state, "best": float(sign * best)}, out)
+            torch.save({"state": state, "best": float(sign * best),
+                        "epoch": int(best_epoch)}, out)
     finally:
         dist.destroy_process_group()
 
 
 def fit_shards(shards_dir, cfg: dict, d: int, world_size: int,
                min_similarity: float, on_ap: bool,
-               out: Optional[Path] = None) -> tuple[dict, float]:
-    """Fit the replicas from parquet shards"""
+               out: Optional[Path] = None) -> tuple[dict, float, int]:
+    """Fit the replicas from parquet shards. Returns the weights, the score and the
+    epoch they came from."""
 
     shards_dir = Path(shards_dir)
     out = Path(out) if out else shards_dir / "fitted.pt"
@@ -177,7 +195,7 @@ def fit_shards(shards_dir, cfg: dict, d: int, world_size: int,
     mp.spawn(_worker, args=(world_size, source, str(out), cfg, d),
              nprocs=world_size, join=True)
     got = torch.load(out, weights_only=False)
-    return got["state"], float(got["best"])
+    return got["state"], float(got["best"]), int(got["epoch"])
 
 
-__all__ = ["fit_data_parallel", "fit_shards"]
+__all__ = ["fit_shards"]
