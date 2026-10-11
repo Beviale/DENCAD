@@ -1,16 +1,28 @@
 stages:
 
-  process_swat:
-    cmd: python -m dencast.data.process.process_swat
+  preprocess_swat:
+    cmd: python -m dencast.data.preprocess.preprocess_swat
     deps:
-      - dencast/data/process/process.py
-      - dencast/data/process/process_swat.py
+      - dencast/data/preprocess/preprocess.py
+      - dencast/data/preprocess/preprocess_swat.py
+      - data/raw/swat/swat.csv
     outs:
       - data/interim/swat/full_swat.parquet
 
+  preprocess_hai:
+    cmd: python -m dencast.data.preprocess.preprocess_hai
+    deps:
+      - dencast/data/preprocess/preprocess.py
+      - dencast/data/preprocess/preprocess_hai.py
+      - data/raw/hai-23.05/hai-train1.csv
+      - data/raw/hai-23.05/hai-train2.csv
+      - data/raw/hai-23.05/hai-test2.csv
+      - data/raw/hai-23.05/label-test2.csv
+    outs:
+      - data/interim/hai/full_hai.parquet
 
-    preprocess_esa:
-    cmd: python -c "from dencast.data.preprocess.preprocess_esa"
+  preprocess_esa:
+    cmd: python -m dencast.data.preprocess.preprocess_esa
     deps:
       - dencast/data/preprocess/preprocess.py
       - dencast/data/preprocess/preprocess_esa.py
@@ -32,3 +44,202 @@ stages:
       - data/interim/swat/split/swat_validation.parquet
       - data/interim/swat/split/swat_test.parquet
 
+  split_hai:
+    cmd: python -m dencast.data.split.split_hai
+    deps:
+      - dencast/data/split/split.py
+      - dencast/data/split/split_hai.py
+      - data/interim/hai/full_hai.parquet
+    outs:
+      - data/interim/hai/split/hai_train.parquet
+      - data/interim/hai/split/hai_validation.parquet
+      - data/interim/hai/split/hai_test.parquet
+
+  split_esa:
+    cmd: python -m dencast.data.split.split_esa
+    deps:
+      - dencast/data/split/split.py
+      - dencast/data/split/split_esa.py
+      - data/interim/esa/full_esa.parquet
+    outs:
+      - data/interim/esa/split/esa_train.parquet
+      - data/interim/esa/split/esa_validation.parquet
+      - data/interim/esa/split/esa_test.parquet
+
+  process_swat:
+    cmd: python -m dencast.data.process.process_swat
+    deps:
+      - dencast/data/process/process.py
+      - dencast/data/process/process_swat.py
+      - dencast/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/interim/swat/split/swat_train.parquet
+      - data/interim/swat/split/swat_validation.parquet
+      - data/interim/swat/split/swat_test.parquet
+    outs:
+      - data/processed/swat/swat_train.parquet
+      - data/processed/swat/swat_validation.parquet
+      - data/processed/swat/swat_test.parquet
+
+  process_hai:
+    cmd: python -m dencast.data.process.process_hai
+    deps:
+      - dencast/data/process/process.py
+      - dencast/data/process/process_hai.py
+      - dencast/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/interim/hai/split/hai_train.parquet
+      - data/interim/hai/split/hai_validation.parquet
+      - data/interim/hai/split/hai_test.parquet
+    outs:
+      - data/processed/hai/hai_train.parquet
+      - data/processed/hai/hai_validation.parquet
+      - data/processed/hai/hai_test.parquet
+
+  process_esa:
+    cmd: python -m dencast.data.process.process_esa
+    deps:
+      - dencast/data/process/process.py
+      - dencast/data/process/process_esa.py
+      - dencast/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/raw/esa/ESA-Mission2/channels.csv
+      - data/interim/esa/split/esa_train.parquet
+      - data/interim/esa/split/esa_validation.parquet
+      - data/interim/esa/split/esa_test.parquet
+    outs:
+      - data/processed/esa_rare_anomalies/esa_train.parquet
+      - data/processed/esa_rare_anomalies/esa_validation.parquet
+      - data/processed/esa_rare_anomalies/esa_test.parquet
+
+  kmeans_swat:
+    cmd: python -m dencast.modeling.train_k_means --split_dir data/processed/swat
+    deps:
+      - dencast/modeling/train_k_means.py
+      - dencast/modeling/windowing.py
+      - dencast/modeling/evaluate.py
+      - dencast/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/swat/swat_train.parquet
+      - data/processed/swat/swat_validation.parquet
+      - data/processed/swat/swat_test.parquet
+    params:
+      - kmeans
+    outs:
+      - models/kmeans_swat_60steps/contract.json:
+          cache: false
+      - reports/kmeans_swat_60steps/best_validation_on_test_set.json:
+          cache: false
+
+  kmeans_hai:
+    cmd: python -m dencast.modeling.train_k_means --split_dir data/processed/hai
+    deps:
+      - dencast/modeling/train_k_means.py
+      - dencast/modeling/windowing.py
+      - dencast/modeling/evaluate.py
+      - dencast/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/hai/hai_train.parquet
+      - data/processed/hai/hai_validation.parquet
+      - data/processed/hai/hai_test.parquet
+    params:
+      - kmeans
+    outs:
+      - models/kmeans_hai_30steps/contract.json:
+          cache: false
+      - reports/kmeans_hai_30steps/best_validation_on_test_set.json:
+          cache: false
+
+  kmeans_esa:
+    cmd: python -m dencast.modeling.train_k_means --split_dir data/processed/esa_rare_anomalies
+    deps:
+      - dencast/modeling/train_k_means.py
+      - dencast/modeling/windowing.py
+      - dencast/modeling/evaluate.py
+      - dencast/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/esa_rare_anomalies/esa_train.parquet
+      - data/processed/esa_rare_anomalies/esa_validation.parquet
+      - data/processed/esa_rare_anomalies/esa_test.parquet
+    params:
+      - kmeans
+    outs:
+      - models/kmeans_esa_rare_anomalies_33steps/contract.json:
+          cache: false
+      - reports/kmeans_esa_rare_anomalies_33steps/best_validation_on_test_set.json:
+          cache: false
+
+  dencad_swat:
+    cmd: python -m dencast.modeling.train_dencad data/processed/swat
+    deps:
+      - dencast/modeling/train_dencad.py
+      - dencast/modeling/lsh.py
+      - dencast/modeling/clustering.py
+      - dencast/modeling/subgraphs.py
+      - dencast/modeling/placement.py
+      - dencast/modeling/parallel.py
+      - dencast/modeling/shards.py
+      - dencast/modeling/windowing.py
+      - dencast/modeling/evaluate.py
+      - dencast/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/swat/swat_train.parquet
+      - data/processed/swat/swat_validation.parquet
+      - data/processed/swat/swat_test.parquet
+    params:
+      - dencad
+      - kmeans.window_steps
+      - kmeans.min_coverage
+    outs:
+      - reports/dencad_swat_60steps.json:
+          cache: false
+
+  dencad_hai:
+    cmd: python -m dencast.modeling.train_dencad data/processed/hai
+    deps:
+      - dencast/modeling/train_dencad.py
+      - dencast/modeling/lsh.py
+      - dencast/modeling/clustering.py
+      - dencast/modeling/subgraphs.py
+      - dencast/modeling/placement.py
+      - dencast/modeling/parallel.py
+      - dencast/modeling/shards.py
+      - dencast/modeling/windowing.py
+      - dencast/modeling/evaluate.py
+      - dencast/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/hai/hai_train.parquet
+      - data/processed/hai/hai_validation.parquet
+      - data/processed/hai/hai_test.parquet
+    params:
+      - dencad
+      - kmeans.window_steps
+      - kmeans.min_coverage
+    outs:
+      - reports/dencad_hai_30steps.json:
+          cache: false
+
+  dencad_esa:
+    cmd: python -m dencast.modeling.train_dencad data/processed/esa_rare_anomalies
+    deps:
+      - dencast/modeling/train_dencad.py
+      - dencast/modeling/lsh.py
+      - dencast/modeling/clustering.py
+      - dencast/modeling/subgraphs.py
+      - dencast/modeling/placement.py
+      - dencast/modeling/parallel.py
+      - dencast/modeling/shards.py
+      - dencast/modeling/windowing.py
+      - dencast/modeling/evaluate.py
+      - dencast/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/esa_rare_anomalies/esa_train.parquet
+      - data/processed/esa_rare_anomalies/esa_validation.parquet
+      - data/processed/esa_rare_anomalies/esa_test.parquet
+    params:
+      - dencad
+      - kmeans.window_steps
+      - kmeans.min_coverage
+    outs:
+      - reports/dencad_esa_rare_anomalies_33steps.json:
+          cache: false

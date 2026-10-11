@@ -77,15 +77,27 @@ def get_distributed_scorer(centroids):
         
     return _scorer
 
+
+def _scored(df, centroids, label: str):
+    """Labels and scores of one part, paired and in time order."""
+    rows = (df.select(W.INDEX,
+                      get_distributed_scorer(centroids)(F.col("features_arr")).alias("_s"),
+                      label)
+              .orderBy(W.INDEX).collect())
+    return (np.asarray([r[label] for r in rows], dtype="uint8"),
+            np.asarray([r["_s"] for r in rows], dtype="float64"))
+
+
 def train_k_means(
     split_dir: Path | str,
     models_dir: Path | str = Path("models"),
     reports_dir: Path | str = Path("reports"),
     k_values: Optional[Sequence[int]] = None,
-    window_seconds: Optional[int] = None,
+    window_steps: Optional[int] = None,
     seed: Optional[int] = None,
     max_iter: Optional[int] = None,
     contaminated_refit: Optional[bool] = None,
+    scale_windows: Optional[bool] = None,
     workers: Optional[int] = None,
 ) -> Path:
     """Train, select k, refit, save. Returns the model directory."""
@@ -96,27 +108,31 @@ def train_k_means(
     workers = workers if workers is not None else cfg.get("workers", 4)
     if contaminated_refit is None:
         contaminated_refit = bool(cfg.get("contaminated_refit", False))
+    if scale_windows is None:
+        scale_windows = bool(cfg.get("scale_windows", True))
 
 
     split_dir, models_dir = Path(split_dir), Path(models_dir)
     dataset, files = W.discover(split_dir)
-    if window_seconds is None:
-        by_dataset = cfg.get("window_seconds") or {}
-        window_seconds = by_dataset.get(dataset, DEFAULT_WINDOW)
+    if window_steps is None:
+        by_dataset = cfg.get("window_steps") or {}
+        window_steps = by_dataset.get(dataset, DEFAULT_WINDOW)
         source = "params.yaml" if dataset in by_dataset else "built-in default"
     else:
         source = "the command line"
     logger.info("dataset {} from {}", dataset, split_dir)
     logger.info("k values {} | window {} s (from {})",
-                list(k_values), window_seconds, source)
+                list(k_values), window_steps, source)
 
     spark = W.session(f"kmeans-train-{dataset}", workers)
     try:
         parts = W.PARTS
         prep = W.prepare(spark, files, declared_categorical(dataset),
-                         window_seconds, parts)
+                         window_steps, parts, scale=scale_windows,
+                         min_coverage=float(cfg.get("min_coverage", 0.0)))
         vec, features, label = prep["vec"], prep["features"], prep["label"]
 
+  
         y = {p: np.asarray([r[label] for r in vec[p].select(label).collect()],
                            dtype="uint8") for p in parts}
         for p in parts:
@@ -134,18 +150,16 @@ def train_k_means(
             model = KMeans(k=k, seed=seed, maxIter=max_iter,
                            featuresCol="features").fit(vec["train"])
             centroids = model.clusterCenters()
-            s_df = vec_val.select(
-                get_distributed_scorer(centroids)(F.col("features_arr")).alias("_s")
-            )
-            s = np.asarray([r["_s"] for r in s_df.collect()], dtype="float64")
-            m = metrics(y["validation"], s)
+            y_val, s = _scored(vec_val, centroids, label)
+            m = metrics(y_val, s)
             search.append({"k": int(k), **m})
             logger.info("  k={:<3} validation AP {:.4f} ROC-AUC {:.4f}", k, m["average_precision"], m["roc_auc"])
 
         best = max(search, key=lambda r: r["roc_auc"])
         k_star, best_threshold, best_average_precision = best["k"], best["threshold"], best["average_precision"]
-        logger.success("selected k={} on validation ROC-AUC {:.4f}, threshold selected={:.4f}",
-                       k_star, best_average_precision, best_threshold)
+        logger.success("selected k={} on validation ROC-AUC {:.4f} (AP {:.4f}), "
+                       "threshold {:.4f}", k_star, best["roc_auc"],
+                       best_average_precision, best_threshold)
 
         if contaminated_refit:
             refit = vec["train"].unionByName(vec["validation"])
@@ -160,17 +174,14 @@ def train_k_means(
         final = KMeans(k=k_star, seed=seed, maxIter=max_iter,
                        featuresCol="features").fit(refit)
         centroids = final.clusterCenters()
-        s_df = vec_test.select(
-            get_distributed_scorer(centroids)(F.col("features_arr")).alias("_s")
-        )
-        s = np.asarray([r["_s"] for r in s_df.collect()], dtype="float64")
-        best_validation_on_test_set = metrics(y["test"], s, best_threshold)
+        y_test, s = _scored(vec_test, centroids, label)
+        best_validation_on_test_set = metrics(y_test, s, best_threshold)
         logger.info("Best validation on test set:  AP {:.4f}, ROC-AUC {:.4f}, F1 {:.4f}", 
         best_validation_on_test_set["average_precision"], best_validation_on_test_set["roc_auc"], best_validation_on_test_set["f1"])
 
-        contract_out = models_dir / f"kmeans_{split_dir.name}_{window_seconds}s"
+        contract_out = models_dir / f"kmeans_{split_dir.name}_{window_steps}steps"
         contract_out.mkdir(parents=True, exist_ok=True)
-        test_out = reports_dir / f"kmeans_{split_dir.name}_{window_seconds}s"
+        test_out = reports_dir / f"kmeans_{split_dir.name}_{window_steps}steps"
         test_out.mkdir(parents=True, exist_ok=True)
         centroids = [[float(x) for x in c] for c in final.clusterCenters()]
 
@@ -192,11 +203,12 @@ def train_k_means(
             "dataset": {
                 "name": dataset,
                 "split_dir": str(split_dir),
-                "window_seconds": int(window_seconds),
+                "window_steps": int(window_steps),
                 "source_columns": len(prep["columns"]),
                 "features": len(features),
                 "feature_columns": features,
                 "label_column": label,
+                "window_scaling": prep["scaling"],
             },
             "metrics": {"validation_search": search, "validation_best": best, "best_validation_on_test_set":best_validation_on_test_set},
             "run": {
@@ -223,7 +235,7 @@ def train_k_means(
             "dataset": {
                 "name": dataset,
                 "split_dir": str(split_dir),
-                "window_seconds": int(window_seconds),
+                "window_steps": int(window_steps),
                 "source_columns": len(prep["columns"]),
                 "features": len(features),
                 "feature_columns": features,
@@ -250,20 +262,23 @@ def main() -> None:
     ap = argparse.ArgumentParser(
         description="Fit K-Means on a split's training part and save the model.")
     ap.add_argument("--split_dir", type=Path,
-                    help="directory holding *_train/_validation/_test.parquet", default="data/processed/swat")
+                    help="directory holding *_train/_validation/_test.parquet", default="data/processed/esa_rare_anomalies")
     ap.add_argument("--models-dir", type=Path, default=Path("models"))
     ap.add_argument("--reports-dir", type=Path, default=Path("reports"))
-    ap.add_argument("--window-seconds", type=int, default=None,
-                    help="overrides params.yaml; 1 or 0 disables windowing")
+    ap.add_argument("--window-steps", type=int, default=None,
+                    help="overrides params.yaml; must be greater than 1")
     ap.add_argument("--k", type=int, nargs="+", default=None,
                     help="overrides kmeans.k_values in params.yaml")
     ap.add_argument("--seed", type=int, default=None)
     ap.add_argument("--contaminated-refit", action="store_true", default=None,
                     help="refit on all of validation, attacks included")
+    ap.add_argument("--no-scale-windows", dest="scale_windows", action="store_false",
+                    default=None, help="leave the window features unscaled")
     ap.add_argument("--workers", type=int, default=None, help="local Spark cores")
     a = ap.parse_args()
-    train_k_means(a.split_dir, a.models_dir, a.reports_dir, a.k, a.window_seconds, a.seed,
-                  contaminated_refit=a.contaminated_refit, workers=a.workers)
+    train_k_means(a.split_dir, a.models_dir, a.reports_dir, a.k, a.window_steps, a.seed,
+                  contaminated_refit=a.contaminated_refit,
+                  scale_windows=a.scale_windows, workers=a.workers)
 
 
 if __name__ == "__main__":
