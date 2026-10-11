@@ -20,7 +20,7 @@ PER_DATASET = ("min_similarity",)
 
 def axes(dataset: str) -> dict[str, list]:
     """The grid as one list of values per parameter, this dataset's entries resolved."""
-    
+
     section = dencad_config().get("grid") or {}
     if hasattr(section, "to_dict"):
         section = section.to_dict()
@@ -133,7 +133,7 @@ def search(split_dir: Path | str, reports_dir: Path | str = Path("reports"),
 def main() -> None:
     ap = argparse.ArgumentParser(
         description="Run DENCAD's grid on validation. The test split is never read.")
-    ap.add_argument("split_dir", type=Path)
+    ap.add_argument("--split_dir", type=Path, default=Path("data/processed/swat"))
     ap.add_argument("--reports-dir", type=Path, default=Path("reports"))
     ap.add_argument("--window-steps", type=int, default=None)
     ap.add_argument("--runs", type=int, default=15,

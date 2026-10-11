@@ -1,0 +1,542 @@
+{
+  "dataset": "swat",
+  "selected_on": "validation average precision",
+  "grid": {
+    "bits": [
+      16,
+      24
+    ],
+    "permutations": [
+      10,
+      20
+    ],
+    "band": [
+      20,
+      50
+    ],
+    "min_similarity": [
+      0.9858,
+      0.991
+    ],
+    "min_pts": [
+      10,
+      5
+    ],
+    "label_change_rate": [
+      0.05
+    ],
+    "max_members": [
+      null
+    ],
+    "mask_centre": [
+      false
+    ],
+    "hidden": [
+      64,
+      128
+    ],
+    "latent": [
+      16,
+      32
+    ],
+    "layers": [
+      2,
+      3
+    ],
+    "learning_rate": [
+      0.001,
+      0.003
+    ],
+    "batch_size": [
+      128
+    ],
+    "max_epochs": [
+      200
+    ],
+    "patience": [
+      20
+    ]
+  },
+  "runs": [
+    {
+      "config": {
+        "bits": 16,
+        "permutations": 10,
+        "band": 50,
+        "min_similarity": 0.9858,
+        "min_pts": 10,
+        "label_change_rate": 0.05,
+        "max_members": null,
+        "mask_centre": false,
+        "hidden": 128,
+        "latent": 16,
+        "layers": 2,
+        "learning_rate": 0.001,
+        "batch_size": 128,
+        "max_epochs": 200,
+        "patience": 20,
+        "max_hops": 2
+      },
+      "epoch": 18,
+      "threshold": 1.7400850737136688,
+      "validation": {
+        "roc_auc": 0.7583142535604798,
+        "average_precision": 0.3150695026739954,
+        "f1": 0.3706293706293706,
+        "segments_caught": 13,
+        "segments": 20
+      },
+      "edges": 15754
+    },
+    {
+      "config": {
+        "bits": 16,
+        "permutations": 20,
+        "band": 20,
+        "min_similarity": 0.991,
+        "min_pts": 5,
+        "label_change_rate": 0.05,
+        "max_members": null,
+        "mask_centre": false,
+        "hidden": 128,
+        "latent": 32,
+        "layers": 2,
+        "learning_rate": 0.001,
+        "batch_size": 128,
+        "max_epochs": 200,
+        "patience": 20,
+        "max_hops": 2
+      },
+      "epoch": 35,
+      "threshold": 1.3102897008178847,
+      "validation": {
+        "roc_auc": 0.7349062827428305,
+        "average_precision": 0.32532838634610334,
+        "f1": 0.3724137931034483,
+        "segments_caught": 13,
+        "segments": 20
+      },
+      "edges": 4214
+    },
+    {
+      "config": {
+        "bits": 24,
+        "permutations": 10,
+        "band": 50,
+        "min_similarity": 0.991,
+        "min_pts": 5,
+        "label_change_rate": 0.05,
+        "max_members": null,
+        "mask_centre": false,
+        "hidden": 128,
+        "latent": 16,
+        "layers": 3,
+        "learning_rate": 0.003,
+        "batch_size": 128,
+        "max_epochs": 200,
+        "patience": 20,
+        "max_hops": 3
+      },
+      "epoch": 25,
+      "threshold": 1.5351545513243923,
+      "validation": {
+        "roc_auc": 0.7565576209140182,
+        "average_precision": 0.30150986585462003,
+        "f1": 0.343042071197411,
+        "segments_caught": 13,
+        "segments": 20
+      },
+      "edges": 5733
+    },
+    {
+      "config": {
+        "bits": 16,
+        "permutations": 20,
+        "band": 20,
+        "min_similarity": 0.9858,
+        "min_pts": 10,
+        "label_change_rate": 0.05,
+        "max_members": null,
+        "mask_centre": false,
+        "hidden": 128,
+        "latent": 16,
+        "layers": 3,
+        "learning_rate": 0.003,
+        "batch_size": 128,
+        "max_epochs": 200,
+        "patience": 20,
+        "max_hops": 3
+      },
+      "epoch": 96,
+      "threshold": 1.4895569567135403,
+      "validation": {
+        "roc_auc": 0.7600230250818166,
+        "average_precision": 0.3121037186001456,
+        "f1": 0.3618421052631579,
+        "segments_caught": 13,
+        "segments": 20
+      },
+      "edges": 10780
+    },
+    {
+      "config": {
+        "bits": 16,
+        "permutations": 10,
+        "band": 20,
+        "min_similarity": 0.991,
+        "min_pts": 5,
+        "label_change_rate": 0.05,
+        "max_members": null,
+        "mask_centre": false,
+        "hidden": 64,
+        "latent": 16,
+        "layers": 2,
+        "learning_rate": 0.003,
+        "batch_size": 128,
+        "max_epochs": 200,
+        "patience": 20,
+        "max_hops": 2
+      },
+      "epoch": 70,
+      "threshold": 0.9146322362197078,
+      "validation": {
+        "roc_auc": 0.7271139741549923,
+        "average_precision": 0.3172122191961806,
+        "f1": 0.3710691823899371,
+        "segments_caught": 13,
+        "segments": 20
+      },
+      "edges": 4183
+    },
+    {
+      "config": {
+        "bits": 16,
+        "permutations": 20,
+        "band": 20,
+        "min_similarity": 0.991,
+        "min_pts": 5,
+        "label_change_rate": 0.05,
+        "max_members": null,
+        "mask_centre": false,
+        "hidden": 64,
+        "latent": 16,
+        "layers": 3,
+        "learning_rate": 0.003,
+        "batch_size": 128,
+        "max_epochs": 200,
+        "patience": 20,
+        "max_hops": 3
+      },
+      "epoch": 72,
+      "threshold": 1.1160184879500188,
+      "validation": {
+        "roc_auc": 0.7625984710310838,
+        "average_precision": 0.3146521520317515,
+        "f1": 0.36036036036036034,
+        "segments_caught": 13,
+        "segments": 20
+      },
+      "edges": 4214
+    },
+    {
+      "config": {
+        "bits": 16,
+        "permutations": 20,
+        "band": 20,
+        "min_similarity": 0.9858,
+        "min_pts": 10,
+        "label_change_rate": 0.05,
+        "max_members": null,
+        "mask_centre": false,
+        "hidden": 64,
+        "latent": 32,
+        "layers": 3,
+        "learning_rate": 0.003,
+        "batch_size": 128,
+        "max_epochs": 200,
+        "patience": 20,
+        "max_hops": 3
+      },
+      "epoch": 90,
+      "threshold": 1.7512039266066415,
+      "validation": {
+        "roc_auc": 0.7590761509307048,
+        "average_precision": 0.3102789979764115,
+        "f1": 0.3593220338983051,
+        "segments_caught": 13,
+        "segments": 20
+      },
+      "edges": 10780
+    },
+    {
+      "config": {
+        "bits": 24,
+        "permutations": 20,
+        "band": 20,
+        "min_similarity": 0.991,
+        "min_pts": 5,
+        "label_change_rate": 0.05,
+        "max_members": null,
+        "mask_centre": false,
+        "hidden": 128,
+        "latent": 16,
+        "layers": 2,
+        "learning_rate": 0.003,
+        "batch_size": 128,
+        "max_epochs": 200,
+        "patience": 20,
+        "max_hops": 2
+      },
+      "epoch": 58,
+      "threshold": 1.0630243575232383,
+      "validation": {
+        "roc_auc": 0.7603748690286779,
+        "average_precision": 0.32414500586845113,
+        "f1": 0.36893203883495146,
+        "segments_caught": 13,
+        "segments": 20
+      },
+      "edges": 4433
+    },
+    {
+      "config": {
+        "bits": 16,
+        "permutations": 10,
+        "band": 50,
+        "min_similarity": 0.991,
+        "min_pts": 10,
+        "label_change_rate": 0.05,
+        "max_members": null,
+        "mask_centre": false,
+        "hidden": 64,
+        "latent": 16,
+        "layers": 2,
+        "learning_rate": 0.001,
+        "batch_size": 128,
+        "max_epochs": 200,
+        "patience": 20,
+        "max_hops": 2
+      },
+      "epoch": 49,
+      "threshold": 1.2579339741280204,
+      "validation": {
+        "roc_auc": 0.7644973935089966,
+        "average_precision": 0.3363640852832459,
+        "f1": 0.3706293706293706,
+        "segments_caught": 12,
+        "segments": 20
+      },
+      "edges": 5592
+    },
+    {
+      "config": {
+        "bits": 16,
+        "permutations": 10,
+        "band": 50,
+        "min_similarity": 0.9858,
+        "min_pts": 5,
+        "label_change_rate": 0.05,
+        "max_members": null,
+        "mask_centre": false,
+        "hidden": 128,
+        "latent": 32,
+        "layers": 3,
+        "learning_rate": 0.003,
+        "batch_size": 128,
+        "max_epochs": 200,
+        "patience": 20,
+        "max_hops": 3
+      },
+      "epoch": 25,
+      "threshold": 2.446101211590882,
+      "validation": {
+        "roc_auc": 0.75808788337408,
+        "average_precision": 0.3037528438245064,
+        "f1": 0.35172413793103446,
+        "segments_caught": 12,
+        "segments": 20
+      },
+      "edges": 15754
+    },
+    {
+      "config": {
+        "bits": 16,
+        "permutations": 10,
+        "band": 50,
+        "min_similarity": 0.9858,
+        "min_pts": 10,
+        "label_change_rate": 0.05,
+        "max_members": null,
+        "mask_centre": false,
+        "hidden": 64,
+        "latent": 16,
+        "layers": 2,
+        "learning_rate": 0.001,
+        "batch_size": 128,
+        "max_epochs": 200,
+        "patience": 20,
+        "max_hops": 2
+      },
+      "epoch": 52,
+      "threshold": 1.7580448326186122,
+      "validation": {
+        "roc_auc": 0.7386937793472778,
+        "average_precision": 0.3156735882484269,
+        "f1": 0.36363636363636365,
+        "segments_caught": 12,
+        "segments": 20
+      },
+      "edges": 15754
+    },
+    {
+      "config": {
+        "bits": 24,
+        "permutations": 20,
+        "band": 20,
+        "min_similarity": 0.9858,
+        "min_pts": 5,
+        "label_change_rate": 0.05,
+        "max_members": null,
+        "mask_centre": false,
+        "hidden": 64,
+        "latent": 16,
+        "layers": 2,
+        "learning_rate": 0.003,
+        "batch_size": 128,
+        "max_epochs": 200,
+        "patience": 20,
+        "max_hops": 2
+      },
+      "epoch": 34,
+      "threshold": 1.3383675353693185,
+      "validation": {
+        "roc_auc": 0.7431345156324783,
+        "average_precision": 0.30534529413860195,
+        "f1": 0.36,
+        "segments_caught": 12,
+        "segments": 20
+      },
+      "edges": 11791
+    },
+    {
+      "config": {
+        "bits": 24,
+        "permutations": 10,
+        "band": 20,
+        "min_similarity": 0.9858,
+        "min_pts": 5,
+        "label_change_rate": 0.05,
+        "max_members": null,
+        "mask_centre": false,
+        "hidden": 64,
+        "latent": 16,
+        "layers": 3,
+        "learning_rate": 0.001,
+        "batch_size": 128,
+        "max_epochs": 200,
+        "patience": 20,
+        "max_hops": 3
+      },
+      "epoch": 116,
+      "threshold": 1.8376140341409792,
+      "validation": {
+        "roc_auc": 0.7162947727890101,
+        "average_precision": 0.3092491635845868,
+        "f1": 0.35587188612099646,
+        "segments_caught": 12,
+        "segments": 20
+      },
+      "edges": 11423
+    },
+    {
+      "config": {
+        "bits": 24,
+        "permutations": 10,
+        "band": 20,
+        "min_similarity": 0.991,
+        "min_pts": 10,
+        "label_change_rate": 0.05,
+        "max_members": null,
+        "mask_centre": false,
+        "hidden": 64,
+        "latent": 16,
+        "layers": 3,
+        "learning_rate": 0.003,
+        "batch_size": 128,
+        "max_epochs": 200,
+        "patience": 20,
+        "max_hops": 3
+      },
+      "epoch": 43,
+      "threshold": 1.2394035421462286,
+      "validation": {
+        "roc_auc": 0.7175314007787134,
+        "average_precision": 0.30696842746677194,
+        "f1": 0.36795252225519287,
+        "segments_caught": 14,
+        "segments": 20
+      },
+      "edges": 4358
+    },
+    {
+      "config": {
+        "bits": 16,
+        "permutations": 10,
+        "band": 50,
+        "min_similarity": 0.9858,
+        "min_pts": 5,
+        "label_change_rate": 0.05,
+        "max_members": null,
+        "mask_centre": false,
+        "hidden": 128,
+        "latent": 32,
+        "layers": 2,
+        "learning_rate": 0.001,
+        "batch_size": 128,
+        "max_epochs": 200,
+        "patience": 20,
+        "max_hops": 2
+      },
+      "epoch": 48,
+      "threshold": 1.3772949566697725,
+      "validation": {
+        "roc_auc": 0.713912064884163,
+        "average_precision": 0.3151641979760077,
+        "f1": 0.35587188612099646,
+        "segments_caught": 12,
+        "segments": 20
+      },
+      "edges": 15754
+    }
+  ],
+  "best": {
+    "config": {
+      "bits": 16,
+      "permutations": 10,
+      "band": 50,
+      "min_similarity": 0.991,
+      "min_pts": 10,
+      "label_change_rate": 0.05,
+      "max_members": null,
+      "mask_centre": false,
+      "hidden": 64,
+      "latent": 16,
+      "layers": 2,
+      "learning_rate": 0.001,
+      "batch_size": 128,
+      "max_epochs": 200,
+      "patience": 20,
+      "max_hops": 2
+    },
+    "epoch": 49,
+    "threshold": 1.2579339741280204,
+    "validation": {
+      "roc_auc": 0.7644973935089966,
+      "average_precision": 0.3363640852832459,
+      "f1": 0.3706293706293706,
+      "segments_caught": 12,
+      "segments": 20
+    },
+    "edges": 5592
+  }
+}

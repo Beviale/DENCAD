@@ -286,7 +286,6 @@ def train_dencad(split_dir: Path | str,
             raise ValueError("stage='final' needs the entry a search chose: its "
                              "configuration, its epoch count and its threshold")
         overrides = {**selected.get("config", {}), **overrides}
-    from pyspark.sql import functions as F
 
     cfg = {**DEFAULTS, **dencad_config(), **{k: v for k, v in overrides.items()
                                               if v is not None}}
@@ -514,7 +513,7 @@ def train_dencad(split_dir: Path | str,
 def main() -> None:
     ap = argparse.ArgumentParser(
         description="DENCAD: anomaly detection over DENCAST clusters, on windowed telemetry.")
-    ap.add_argument("split_dir", type=Path,
+    ap.add_argument("--split_dir", type=Path, default=Path("data/processed/swat"),
                     help="directory holding *_train/_validation/_test.parquet")
     ap.add_argument("--reports-dir", type=Path, default=Path("reports"))
     ap.add_argument("--window-steps", type=int, default=None,
@@ -532,12 +531,12 @@ def main() -> None:
     ap.add_argument("--train-examples", type=int, default=None)
     ap.add_argument("--max-hops", type=int, default=None,
                     help="keep only the nodes within this many hops of the centre; "
-                         "exact when it equals `layers`")
+                         "exact when it equals 'layers'")
     ap.add_argument("--patience", type=int, default=None,
                     help="epochs without improvement before the fit stops")
     ap.add_argument("--max-epochs", type=int, default=None)
     ap.add_argument("--replicas", type=int, default=None)
-    ap.add_argument("--stage", choices=("select", "final"), default="select",
+    ap.add_argument("--stage", choices=("select", "final"), default="final",
                     help="select: validation only, the test is never read. "
                          "final: refit on train + validation's normals, score the test")
     ap.add_argument("--selected", type=Path, default=None,
