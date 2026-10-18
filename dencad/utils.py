@@ -62,6 +62,48 @@ class Params:
         return self._data
 
 
+def section(name: str) -> dict:
+    """One top-level section of params.yaml as a plain dict."""
+    try:
+        got = Params.load(PARAMS_PATH).get(name)
+    except Exception:
+        return {}
+    return got.to_dict() if hasattr(got, "to_dict") else dict(got or {})
+
+
+def grid_axes(model: str, dataset: str | None = None) -> dict[str, list]:
+    """A model's grid: one list of values per axis, the dataset's entry resolved."""
+    out: dict[str, list] = {}
+    for name, values in (section(model).get("grid") or {}).items():
+        if isinstance(values, dict):          # written per dataset
+            if dataset is None or dataset not in values:
+                continue
+            values = values[dataset]
+        out[name] = list(values) if isinstance(values, (list, tuple)) else [values]
+    return out
+
+
+def model_config(model: str, dataset: str | None = None) -> dict:
+    """A model's settings: the shared data block, the head of every grid axis as
+    its default, then the model's own keys on top."""
+    cfg = dict(section("data"))
+    cfg.pop("min_similarity", None)           # an axis, not a setting
+    cfg.update({k: v[0] for k, v in grid_axes(model, dataset).items() if v})
+    cfg.update({k: v for k, v in section(model).items() if k != "grid"})
+    if dataset is not None:
+        cfg["window_steps"] = (cfg.get("window_steps") or {}).get(dataset)
+    return cfg
+
+
+def k_sigma() -> list[float]:
+    """The sigma multipliers to try, shared by the two models that use the rule."""
+    try:
+        got = Params.load(PARAMS_PATH).get("k_sigma")
+    except Exception:
+        got = None
+    return [float(x) for x in (got or [3.0])]
+
+
 CATEGORICAL_PATH = Path("data/raw/categorical_columns.yaml")
 
 
@@ -77,4 +119,5 @@ def declared_categorical(dataset: str,
     return list(data[dataset])
 
 
-__all__ = ["Params", "PARAMS_PATH", "CATEGORICAL_PATH", "declared_categorical"]
+__all__ = ["Params", "PARAMS_PATH", "CATEGORICAL_PATH", "declared_categorical",
+           "section", "grid_axes", "model_config", "k_sigma"]

@@ -40,7 +40,7 @@ from scipy.spatial.distance import cdist
 
 from dencad.modeling import windowing as W
 from dencad.modeling.evaluate import metrics, save_report
-from dencad.utils import Params, PARAMS_PATH, declared_categorical
+from dencad.utils import declared_categorical, grid_axes, k_sigma, model_config
 
 from pyspark.ml.functions import vector_to_array
 from pyspark.sql import functions as F
@@ -49,18 +49,6 @@ from pyspark.ml.clustering import KMeans
 
 
 DEFAULT_K = (2, 4, 8, 16, 32, 64)
-DEFAULT_WINDOW = 60
-
-
-def kmeans_config() -> dict:
-    """The 'kmeans' section of params.yaml, or an empty dict if it cannot be read."""
-    try:
-        section = Params.load(PARAMS_PATH).get("kmeans")
-        return section.to_dict() if hasattr(section, "to_dict") else (section or {})
-    except Exception as exc:
-        logger.warning("params.yaml unreadable ({}): falling back to the built-in "
-                       "defaults", exc)
-        return {}
 
 
 def get_distributed_scorer(centroids):
@@ -107,31 +95,25 @@ def train_k_means(
     workers: Optional[int] = None,
 ) -> Path:
     """Train, select k, refit, save. Returns the model directory."""
-    cfg = kmeans_config()
-    k_values = k_values if k_values is not None else cfg.get("k_values", DEFAULT_K)
+    split_dir, models_dir = Path(split_dir), Path(models_dir)
+    dataset, files = W.discover(split_dir)
+    cfg = model_config("kmeans", dataset)
+    k_values = k_values if k_values is not None else (grid_axes("kmeans").get("k")
+                                                      or DEFAULT_K)
     seed = seed if seed is not None else cfg.get("seed", 42)
     max_iter = max_iter if max_iter is not None else cfg.get("max_iter", 50)
     workers = workers if workers is not None else cfg.get("workers", 4)
-    own = Params.load(PARAMS_PATH).get("sigma") or {}
-    own = own.to_dict() if hasattr(own, "to_dict") else dict(own)
-    k_sigma = [float(x) for x in (own.get("k_sigma") or [3.0])]
+    sigmas = k_sigma()
     if contaminated_refit is None:
         contaminated_refit = bool(cfg.get("contaminated_refit", False))
     if scale_windows is None:
         scale_windows = bool(cfg.get("scale_windows", True))
-
-
-    split_dir, models_dir = Path(split_dir), Path(models_dir)
-    dataset, files = W.discover(split_dir)
     if window_steps is None:
-        by_dataset = cfg.get("window_steps") or {}
-        window_steps = by_dataset.get(dataset, DEFAULT_WINDOW)
-        source = "params.yaml" if dataset in by_dataset else "built-in default"
-    else:
-        source = "the command line"
+        window_steps = cfg.get("window_steps")
+        if window_steps is None:
+            raise ValueError(f"params.yaml has no data.window_steps for {dataset!r}")
     logger.info("dataset {} from {}", dataset, split_dir)
-    logger.info("k values {} | window {} s (from {})",
-                list(k_values), window_steps, source)
+    logger.info("k values {} | window {} readings", list(k_values), window_steps)
 
     spark = W.session(f"kmeans-train-{dataset}", workers)
     try:
@@ -163,9 +145,9 @@ def train_k_means(
             mu, sd = distance_spread(vec_train, centroids)
             y_val, s = _scored(vec_val, centroids, label, mu, sd)
             m = metrics(y_val, s)
-            by_k = {kk: metrics(y_val, s, threshold=kk) for kk in k_sigma}
-            k_best = max(k_sigma, key=lambda kk: by_k[kk]["f1"])
-            for kk in k_sigma:
+            by_k = {kk: metrics(y_val, s, threshold=kk) for kk in sigmas}
+            k_best = max(sigmas, key=lambda kk: by_k[kk]["f1"])
+            for kk in sigmas:
                 logger.info("    k={:<3} k_sigma={:<4} precision {:.4f} recall {:.4f} "
                             "F1 {:.4f}", k, kk, by_k[kk]["precision"],
                             by_k[kk]["recall"], by_k[kk]["f1"])
@@ -214,7 +196,7 @@ def train_k_means(
                 "library": "pyspark.ml.clustering",
                 "spark_version": spark.version,
                 "score": "distance to the nearest centroid, in training deviations",
-                "k_sigma_candidates": k_sigma,
+                "k_sigma_candidates": sigmas,
                 "training_distance": {"mean": mu, "deviation": sd},
                 "k_candidates": [int(k) for k in k_values],
                 "k_selected": k_star,
@@ -249,7 +231,7 @@ def train_k_means(
             float(best_threshold),
             {"window_steps": int(window_steps), "k": int(k_star),
              "k_candidates": [int(x) for x in k_values],
-             "k_sigma_candidates": k_sigma, "max_iter": max_iter, "seed": seed},
+             "k_sigma_candidates": sigmas, "max_iter": max_iter, "seed": seed},
             {"stage": "final", "selected_by": "validation AP",
              "refit_on": note, "refit_windows": int(n_refit),
              "training_distance": {"mean": mu, "deviation": sd}})
@@ -272,7 +254,7 @@ def main() -> None:
     ap.add_argument("--window-steps", type=int, default=None,
                     help="overrides params.yaml; must be greater than 1")
     ap.add_argument("--k", type=int, nargs="+", default=None,
-                    help="overrides kmeans.k_values in params.yaml")
+                    help="overrides kmeans.grid.k in params.yaml")
     ap.add_argument("--seed", type=int, default=None)
     ap.add_argument("--contaminated-refit", action="store_true", default=None,
                     help="refit on all of validation, attacks included")
@@ -289,4 +271,4 @@ if __name__ == "__main__":
     main()
 
 
-__all__ = ["train_k_means", "kmeans_config", "DEFAULT_K", "DEFAULT_WINDOW"]
+__all__ = ["train_k_means", "DEFAULT_K"]

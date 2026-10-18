@@ -1,81 +1,73 @@
-kmeans:
-  k_values: [2, 4, 8, 16, 32, 64]     # number of clusters, not the sigma multiplier
-  window_steps:
-    swat: 60     
-    hai: 30       
-    esa: 33       
-  min_coverage: 0.5
-  seed: 42
-  max_iter: 50
-  contaminated_refit: false
+data:
+  window_steps:                     
+    swat: 60                         # 1 s per reading
+    hai: 30                          # 1 s per reading
+    esa: 33                          # 18 s per reading
+  min_similarity: &min_similarity 
+    swat: [0.9858, 0.9910]
+    hai: [0.7367, 0.8741]
+    esa: [0.95, 0.90]             
   scale_windows: true
-  workers: 4
-
-# DENCAD: the anomaly detector built on DENCAST's clusters.
-dencad:
-  # --- neighbourhood graph (LSH) ---
-  bits: 16
-  permutations: 10
-  band: 20
-  min_similarity:
-    swat: 0.9858
-    hai: 0.7367
-    esa: 0.95    
-
-  # --- density and clustering ---
-  min_pts: 10                 # degree for a core object, DBSCAN's minPts
-  label_change_rate: 0.05     # stop below this share of |E| propagations
-  attach_to: clustered        # core | clustered | any: what a new object may attach to
-
-  # --- contextual subgraphs ---
-  max_members: null  # null is the whole cluster
-  max_hops: 2  
-  mask_centre: false # hide the centre's own attributes, or keep them
-
-  # --- autoencoder ---
-  hidden: 64
-  latent: 16
-  layers: 2                  
-  learning_rate: 0.001
-  batch_size: 128
-  max_epochs: 150
-  patience: 20
-  early_stopping: validation_ap
-  holdout: 0.1                # slice of train for early stopping
-  train_examples: null        # null uses every training window
-  scale_windows: true    
-  replicas: 4
-  scale_learning_rate: true
   seed: 42
   workers: 4
 
-  # ------------------------------------------------------------------ grid search
+# Threshold of the sigma rule, in deviations.
+k_sigma: [2.0, 2.5, 3.0, 3.5]
+
+# K-Means on the windows
+kmeans:
+  contaminated_refit: false
+  min_coverage: 0.5
+  max_iter: 50
+  grid:
+    k: [2, 4, 8, 16, 32, 64]         # number of clusters
+
+# DENCAST's graph.
+sigma:
+  contaminated_refit: false
+  min_coverage: 0.5
+  attach_to: clustered             
   grid:
     bits: [16, 24]
     permutations: [10, 20]
     band: [20, 50]
-    
-    min_similarity:
-      hai: [0.7367, 0.8741]
-      swat: [0.9858, 0.9910]
-      esa: [0.95, 0.90]   
+    min_similarity: *min_similarity
+    min_pts: [10, 5]                
+    label_change_rate: [0.05]       
 
-    # --- density and clustering
-    min_pts: [10, 5]                  
-    label_change_rate: [0.05] 
-
-    # --- contextual subgraphs. 
-    max_members: [null]          # null is the whole cluster
-    mask_centre: [false]        # hide the centre's own attributes, or keep them
-
-    # --- autoencoder
-    hidden: [64, 128]  
-    latent: [16, 32]                                      
-    layers:  [2, 3]                                            
+# Autoencoder on one window at a time. No graph: the control for DENCAD.
+plain:
+  contaminated_refit: false
+  min_coverage: 0.5
+  max_epochs: 200
+  grid:
+    hidden: [64, 128]
+    latent: [16, 32]
+    layers: [2, 3]
     learning_rate: [0.001, 0.003]
-    batch_size: 128
-    max_epochs: 200
+    batch_size: [128]
     patience: [20]
 
-sigma:
-  k_sigma: [2.0, 2.5, 3.0, 3.5]
+# DENCAD.
+dencad:
+  contaminated_refit: false
+  min_coverage: 0.5
+  max_epochs: 200
+  attach_to: clustered
+  max_members: null                  # null is the whole cluster
+  mask_centre: false                 # hide the centre's own attributes, or keep them
+  replicas: 4
+  scale_learning_rate: true
+  grid:
+    bits: [16, 24]
+    permutations: [10, 20]
+    band: [20, 50]
+    min_similarity: *min_similarity
+    min_pts: [10, 5]
+    label_change_rate: [0.05]
+    hidden: [64, 128]
+    latent: [16, 32]
+    layers: [2, 3]
+    learning_rate: [0.001, 0.003]
+    batch_size: [128]
+    patience: [20]

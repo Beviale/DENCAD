@@ -41,8 +41,7 @@ def _read_shard(rank: int, source: dict, cfg: dict) -> dict:
     got = read_shard(Path(source["dir"]), rank,
                      min_similarity=float(source["min_similarity"]),
                      max_members=source["max_members"],
-                     seed=int(cfg["seed"]), holdout=float(cfg["holdout"]),
-                     max_hops=cfg["max_hops"])
+                     seed=int(cfg["seed"]), max_hops=int(cfg["layers"]))
     got["on_ap"] = bool(source["on_ap"])
     got["all_examples"] = len(got["egos"])
     return got
@@ -61,7 +60,7 @@ def _worker(rank: int, world_size: int, source: dict, out: str, cfg: dict,
         shard = _read_shard(rank, source, cfg)
         egos, val_egos = shard["egos"], shard["val_egos"]
         on_ap = shard["on_ap"]
-        mine, mine_dev = shard["fit"], shard["dev"]
+        mine = shard["fit"]
         fit = shard["all_examples"]
         if rank == 0:
             logger.info("  rank 0: {:,} examples over {} clusters, {:,} member rows "
@@ -81,9 +80,7 @@ def _worker(rank: int, world_size: int, source: dict, out: str, cfg: dict,
                         if cfg["scale_learning_rate"] else " (unscaled)")
 
         fitbatches = batches(egos, mine, d, cfg["batch_size"], cfg["mask_centre"])
-        devbatches = batches(egos, mine_dev, d, cfg["batch_size"],
-                               cfg["mask_centre"])
-     
+
         steps = torch.tensor([len(fitbatches)], dtype=torch.long)
         dist.all_reduce(steps, op=dist.ReduceOp.MIN)
         steps = int(steps.item())
@@ -96,14 +93,14 @@ def _worker(rank: int, world_size: int, source: dict, out: str, cfg: dict,
             return replica(X, A_hat, centre)
 
         best, waited, state, best_epoch = -np.inf, 0, None, 0
-        sign = 1.0 if on_ap else -1.0
-
         fixed = cfg.get("fixed_epochs")
+        if not fixed and not on_ap:
+            raise ValueError("a fit that does not stop on the validation AP needs "
+                             "fixed_epochs: there is no other stopping rule left")
         epochs = int(fixed) if fixed else int(cfg["max_epochs"])
-        label = "validation AP" if on_ap else "held-out"
         if rank == 0:
             logger.info("  {} epochs, {}", epochs,
-                        f"stopping on {label}" if not fixed else "no stopping")
+                        "stopping on the validation AP" if not fixed else "no stopping")
         order = np.arange(len(fitbatches))
         shuffler = np.random.default_rng(cfg["seed"] + rank)
         for epoch in range(1, epochs + 1):
@@ -136,28 +133,17 @@ def _worker(rank: int, world_size: int, source: dict, out: str, cfg: dict,
                 continue
 
             replica.eval()
-            if on_ap:
-                mine_scores = _score_local(replica, forward, val_egos, cfg, d)
-                pieces = [None] * world_size
-                dist.all_gather_object(
-                    pieces, (shard["val_rows"], mine_scores, shard["val_y"]))
-                rows = np.concatenate([p[0] for p in pieces])
-                scores = np.concatenate([p[1] for p in pieces])
-                ys = np.concatenate([p[2] for p in pieces])
-                held = float(metrics(ys, scores)["average_precision"])
-            else:
-                with torch.no_grad():
-                    total = sum(((forward(X, A_hat, centre) - target) ** 2
-                                 ).mean().item() * len(centre)
-                                for X, A_hat, mask, centre, target, _ in devbatches)
-                    seen = torch.tensor([total, float(len(mine_dev))])
-                dist.all_reduce(seen, op=dist.ReduceOp.SUM)
-                held = float(seen[0] / max(seen[1].item(), 1.0))
+            mine_scores = _score_local(replica, forward, val_egos, cfg, d)
+            pieces = [None] * world_size
+            dist.all_gather_object(pieces, (mine_scores, shard["val_y"]))
+            scores = np.concatenate([p[0] for p in pieces])
+            ys = np.concatenate([p[1] for p in pieces])
+            seen = float(metrics(ys, scores)["average_precision"])
 
             if rank == 0 and (epoch % 5 == 0 or epoch == 1):
-                logger.info("  epoch {:>3}: {} {:.5f}", epoch, label, held)
-            if sign * held > best + 1e-5:
-                best, waited, best_epoch = sign * held, 0, epoch
+                logger.info("  epoch {:>3}: validation AP {:.5f}", epoch, seen)
+            if seen > best + 1e-5:
+                best, waited, best_epoch = seen, 0, epoch
                 if rank == 0:
                     state = {k: v.clone()
                              for k, v in replica.module.state_dict().items()}
@@ -169,7 +155,7 @@ def _worker(rank: int, world_size: int, source: dict, out: str, cfg: dict,
                     break
 
         if rank == 0:
-            torch.save({"state": state, "best": float(sign * best),
+            torch.save({"state": state, "best": float(best),
                         "epoch": int(best_epoch)}, out)
     finally:
         dist.destroy_process_group()

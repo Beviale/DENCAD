@@ -149,9 +149,9 @@ def write_shards(out_dir: Path, world_size: int, queries, members,
 
 
 def read_shard(out_dir: Path, rank: int, min_similarity: float,
-               max_members: Optional[int], seed: int, holdout: float,
+               max_members: Optional[int], seed: int,
                max_hops: Optional[int] = None) -> dict:
-    """A replica's own partition, as subgraphs: its queries, its validation, its split.
+    """A replica's own partition, as subgraphs: its queries and its validation.
 
     Read with pandas and built cluster by cluster, so the features of the clusters this
     replica was not given are never in this process -- which is the point of writing the
@@ -183,11 +183,9 @@ def read_shard(out_dir: Path, rank: int, min_similarity: float,
         return (np.concatenate(rows) if rows else np.zeros(0, dtype="int64")), egos
 
     _, egos = build(queries)
-    # The held-out slice, drawn here rather than on the driver: the driver no longer has
-    # the rows to draw it from. Only read when the fit stops on the reconstruction loss.
+    # Shuffled once here, so a batch is not one cluster: the fit sees every example.
     order = np.arange(len(egos))
     np.random.default_rng(seed + rank).shuffle(order)
-    cut = int((1 - holdout) * len(order))
 
     val = part("validation")
     val_rows, val_egos = np.zeros(0, dtype="int64"), []
@@ -198,8 +196,7 @@ def read_shard(out_dir: Path, rank: int, min_similarity: float,
                  .to_numpy().astype("uint8"))
 
     sizes = np.array([len(e.features) for e in egos]) if egos else np.zeros(1)
-    return {"egos": egos, "fit": order[:cut].tolist(), "dev": order[cut:].tolist(),
-            "val_egos": val_egos, "val_rows": val_rows, "val_y": val_y,
+    return {"egos": egos, "fit": order.tolist(), "val_egos": val_egos, "val_rows": val_rows, "val_y": val_y,
             "n_clusters": len(by_cluster), "member_rows": len(members),
             "nodes_median": int(np.median(sizes)), "nodes_max": int(sizes.max())}
 

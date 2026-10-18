@@ -12,41 +12,13 @@ from typing import Optional
 from loguru import logger
 import random
 
-from dencad.modeling.train_dencad import dencad_config, train_dencad
+from dencad.modeling.train_dencad import train_dencad
 from dencad.modeling.train_plain import train_plain
 from dencad.modeling.train_sigma import train_sigma
 from dencad.modeling.windowing import discover
+from dencad.utils import grid_axes
 
-PER_DATASET = ("min_similarity",)
-MODELS = {
-    "dencad": (train_dencad, None),
-    "plain": (train_plain, ("hidden", "latent", "layers", "learning_rate",
-                            "patience", "batch_size", "max_epochs")),
-    "sigma": (train_sigma, ("bits", "permutations", "band", "min_similarity",
-                            "min_pts", "label_change_rate", "attach_to")),
-}
-
-
-def axes(dataset: str, model: str = "dencad") -> dict[str, list]:
-    """The grid as one list of values per parameter, this dataset's entries resolved."""
-
-    section = dencad_config().get("grid") or {}
-    if hasattr(section, "to_dict"):
-        section = section.to_dict()
-    keep = MODELS[model][1]
-    out: dict[str, list] = {}
-    for name, values in section.items():
-        if keep is not None and name not in keep:
-            continue
-        if name in PER_DATASET:
-            values = (values.to_dict() if hasattr(values, "to_dict")
-                      else values).get(dataset)
-            if values is None:
-                continue
-        if values is None or not isinstance(values, (list, tuple)):
-            values = [values]
-        out[name] = list(values)
-    return out
+MODELS = {"dencad": train_dencad, "plain": train_plain, "sigma": train_sigma}
 
 
 def plan(grid: dict[str, list], runs: int, seed: int = 42) -> list[dict]:
@@ -94,10 +66,10 @@ def search(split_dir: Path | str, reports_dir: Path | str = Path("reports"),
     split_dir = Path(split_dir)
     reports_dir = Path(reports_dir)
     dataset, _ = discover(split_dir)
-    trainer = MODELS[model][0]
-    grid = axes(dataset, model)
+    trainer = MODELS[model]
+    grid = grid_axes(model, dataset)
     if not grid:
-        raise ValueError("the 'grid' section of params.yaml is empty")
+        raise ValueError(f"params.yaml has no grid for {model!r} on {dataset!r}")
     drawn = plan(grid, runs, seed)
     total = 1
     for v in grid.values():
@@ -107,8 +79,6 @@ def search(split_dir: Path | str, reports_dir: Path | str = Path("reports"),
 
     rows: list[dict] = []
     for i, config in enumerate(drawn, start=1):
-        if model == "dencad" and "layers" in config and "max_hops" not in grid:
-            config = {**config, "max_hops": int(config["layers"])}
         logger.info("[{}/{}] {}", i, len(drawn),
                     ", ".join(f"{k}={v}" for k, v in config.items()))
         try:
@@ -161,4 +131,4 @@ if __name__ == "__main__":
     main()
 
 
-__all__ = ["search", "plan", "axes"]
+__all__ = ["search", "plan"]

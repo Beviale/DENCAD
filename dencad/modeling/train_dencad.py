@@ -28,7 +28,7 @@ from dencad.modeling import windowing as W
 from dencad.modeling.evaluate import metrics, save_report
 from dencad.modeling.lsh import ID, NeighbourhoodGraph
 from dencad.modeling.placement import nearest_grid_frames
-from dencad.utils import Params, PARAMS_PATH, declared_categorical
+from dencad.utils import declared_categorical, model_config
 from dencad.modeling.shards import query_frame
 from dencad.modeling.subgraphs import egos_from_rows
 from dencad.modeling.parallel import fit_shards
@@ -37,24 +37,12 @@ from dencad.modeling import shards as S
 PARTS = ("train", "validation", "test")
 
 
-def dencad_config() -> dict:
-    """The 'dencad' section of params.yaml, or an empty dict if it cannot be read."""
-    try:
-        section = Params.load(PARAMS_PATH).get("dencad")
-        return section.to_dict() if hasattr(section, "to_dict") else (section or {})
-    except Exception as exc:
-        logger.warning("params.yaml unreadable ({}): falling back to the built-in "
-                       "defaults", exc)
-        return {}
-
-
 DEFAULTS = {
     "bits": 16, "permutations": 10, "band": 20, "min_pts": 10,
     "label_change_rate": 0.05, "attach_to": "clustered", "max_members": None,
-    "max_hops": None,
     "mask_centre": False, "hidden": 64, "latent": 16, "layers": 2,
     "learning_rate": 1e-3, "batch_size": 128, "max_epochs": 60, "patience": 8,
-    "holdout": 0.1, "train_examples": None, "scale_windows": True,
+    "train_examples": None, "scale_windows": True,
     "early_stopping": "validation_ap",
     "replicas": 4,
     # Adam's rate times the replica count, so the fit is not penalised for the larger
@@ -240,7 +228,7 @@ def _score_frames(spark, win, placed, clustered, members, model, cfg, features,
 
     d, conf = model.d, dict(cfg)
     cap, min_sim = cfg["max_members"], float(min_similarity)
-    hops = cfg["max_hops"]
+    hops = int(cfg["layers"])     # with L convolutions the centre reads its L-hop ball
     b_state = spark.sparkContext.broadcast(
         {k: v.detach().numpy() for k, v in model.net.state_dict().items()})
     queries = query_frame(placed, clustered, win, features)
@@ -288,24 +276,18 @@ def train_dencad(split_dir: Path | str,
                              "configuration, its epoch count and its threshold")
         overrides = {**selected.get("config", {}), **overrides}
 
-    cfg = {**DEFAULTS, **dencad_config(), **{k: v for k, v in overrides.items()
-                                              if v is not None}}
     split_dir, reports_dir = Path(split_dir), Path(reports_dir)
     dataset, files = W.discover(split_dir)
-
+    cfg = {**DEFAULTS, **model_config("dencad", dataset),
+           **{k: v for k, v in overrides.items() if v is not None}}
     if min_similarity is None:
-        by_dataset = cfg.get("min_similarity")
-        if isinstance(by_dataset, dict):
-            min_similarity = by_dataset.get(dataset)
-        elif by_dataset is not None:
-            min_similarity = float(by_dataset)
-    if min_similarity is None:
-        raise ValueError(f"no min_similarity for {dataset!r}: params.yaml lists "
-                         f"{sorted((cfg.get('min_similarity') or {}))}")
-    kmeans = Params.load(PARAMS_PATH).get("kmeans") or {}
-    if window_steps is None:
-        window_steps = (kmeans.get("window_steps") or {}).get(dataset, 60)
-    min_coverage = float(kmeans.get("min_coverage", 0.0))
+        min_similarity = cfg.get("min_similarity")
+    if min_similarity is None or cfg.get("window_steps") is None:
+        raise ValueError(f"params.yaml has no entry for {dataset!r} under "
+                         "data.window_steps or dencad.grid.min_similarity")
+    min_similarity = float(min_similarity)
+    window_steps = int(window_steps or cfg["window_steps"])
+    min_coverage = float(cfg["min_coverage"])
 
     if int(cfg["replicas"]) < 2:
         raise ValueError(
@@ -315,20 +297,11 @@ def train_dencad(split_dir: Path | str,
             "replica reads are written by Spark and a lone replica would still read "
             "one of them")
 
-    if cfg["max_hops"] is not None and int(cfg["max_hops"]) < int(cfg["layers"]):
-        raise ValueError(
-            f"max_hops={cfg['max_hops']} with layers={cfg['layers']} would throw away "
-            "nodes the centre's output depends on. The pruning is exact only at or "
-            "above the layer count: with L convolutions the centre reads its L-hop "
-            "ball, so cutting at L costs nothing and cutting below it changes the "
-            "model without saying so")
-
     logger.info("dataset {} from {} | window {} readings | cosine >= {} | minPts {}",
                 dataset, split_dir, window_steps, min_similarity, cfg["min_pts"])
     logger.info("contextual subgraphs: {} members, {} hops, centre {} | "
                 "autoencoder {}x{} latent {}",
-                cfg["max_members"] or "whole cluster",
-                cfg["max_hops"] or "all",
+                cfg["max_members"] or "whole cluster", cfg["layers"],
                 "masked" if cfg["mask_centre"] else "kept in the input",
                 cfg["layers"], cfg["hidden"], cfg["latent"])
 
@@ -416,13 +389,13 @@ def train_dencad(split_dir: Path | str,
                        validation=vqueries,
                        meta={"dataset": dataset,
                              "min_similarity": float(min_similarity)})
-        state_dict, held_out, best_epoch = fit_shards(
+        state_dict, best_ap, best_epoch = fit_shards(
             shard_dir, cfg, len(features), replicas,
             min_similarity=min_similarity, on_ap=on_ap)
         model.net.load_state_dict(state_dict)
        
         shutil.rmtree(shard_dir, ignore_errors=True)
-        logger.success("autoencoder fitted, best held-out {:.5f}", held_out)
+        logger.success("autoencoder fitted, best validation AP {:.5f}", best_ap)
 
        
         scores = {"train": _score_frames(spark, win["train"], placed, clustered,
@@ -456,7 +429,7 @@ def train_dencad(split_dir: Path | str,
     report = save_report(
         reports_dir / f"dencad_{split_dir.name}_{window_steps}steps_{stage}.json",
         "DENCAD", dataset, results, carried,
-        {"window_steps": int(window_steps), "min_similarity": float(min_similarity), **{k: cfg[k] for k in ("bits", "permutations", "band", "min_pts", "label_change_rate", "attach_to", "max_members", "max_hops", "mask_centre", "hidden", "latent", "layers", "learning_rate", "batch_size", "patience", "replicas", "seed")}},
+        {"window_steps": int(window_steps), "min_similarity": float(min_similarity), **{k: cfg[k] for k in ("bits", "permutations", "band", "min_pts", "label_change_rate", "attach_to", "max_members", "mask_centre", "hidden", "latent", "layers", "learning_rate", "batch_size", "patience", "replicas", "seed")}},
         {"stage": stage, "epoch": int(best_epoch),
          "windows": {p: int(len(labels[p])) for p in parts},
          "graph": {"edges": int(n_edges), "clusters": summary.get("clusters")}})
@@ -492,9 +465,6 @@ def main() -> None:
     ap.add_argument("--latent", type=int, default=None)
     ap.add_argument("--layers", type=int, default=None)
     ap.add_argument("--train-examples", type=int, default=None)
-    ap.add_argument("--max-hops", type=int, default=None,
-                    help="keep only the nodes within this many hops of the centre; "
-                         "exact when it equals 'layers'")
     ap.add_argument("--patience", type=int, default=None,
                     help="epochs without improvement before the fit stops")
     ap.add_argument("--max-epochs", type=int, default=None)
@@ -515,7 +485,6 @@ def main() -> None:
                   train_examples=a.train_examples, workers=a.workers,
                 contaminated_refit=a.contaminated_refit,
                   patience=a.patience, max_epochs=a.max_epochs,
-                  max_hops=a.max_hops,
                   replicas=a.replicas, stage=a.stage,
                   selected=(_carry(a.selected)
                             if a.selected else None))
@@ -525,4 +494,4 @@ if __name__ == "__main__":
     main()
 
 
-__all__ = ["train_dencad", "dencad_config", "GraphAutoEncoder", "DEFAULTS"]
+__all__ = ["train_dencad", "GraphAutoEncoder", "DEFAULTS"]

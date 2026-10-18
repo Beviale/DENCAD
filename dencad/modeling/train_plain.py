@@ -20,8 +20,8 @@ from dencad.modeling.evaluate import metrics, save_report
 from dencad.modeling.lsh import ID
 from dencad.modeling.subgraphs import ContextualSubgraph
 from dencad.modeling.train_dencad import (DEFAULTS, GraphAutoEncoder, batches,
-                                          _score, dencad_config)
-from dencad.utils import Params, PARAMS_PATH, declared_categorical
+                                          _score)
+from dencad.utils import declared_categorical, model_config
 
 PARTS = ("train", "validation", "test")
 
@@ -122,12 +122,11 @@ def train_plain(split_dir: Path | str, reports_dir: Path | str = Path("reports")
         overrides = {**selected.get("config", {}), **overrides}
 
     split_dir, reports_dir = Path(split_dir), Path(reports_dir)
-    cfg = {**DEFAULTS, **dencad_config(),
-           **{k: v for k, v in overrides.items() if v is not None}}
     dataset, files = W.discover(split_dir)
-    kmeans = Params.load(PARAMS_PATH)["kmeans"]
-    window_steps = window_steps or (kmeans.get("window_steps") or {}).get(dataset, 60)
-    min_coverage = float(kmeans.get("min_coverage", 0.0))
+    cfg = {**DEFAULTS, **model_config("plain", dataset),
+           **{k: v for k, v in overrides.items() if v is not None}}
+    window_steps = int(window_steps or cfg["window_steps"])
+    min_coverage = float(cfg["min_coverage"])
 
     logger.info("plain autoencoder on {} | window {} readings | {}x{} latent {}",
                 dataset, window_steps, cfg["layers"], cfg["hidden"], cfg["latent"])

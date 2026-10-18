@@ -143,9 +143,8 @@ stages:
       - data/processed/swat/swat_train.parquet
       - data/processed/swat/swat_validation.parquet
     params:
+      - data
       - dencad
-      - kmeans.window_steps
-      - kmeans.min_coverage
     outs:
       - reports/search_dencad_swat.json:
           cache: false
@@ -169,9 +168,8 @@ stages:
       - data/processed/swat/swat_test.parquet
       - reports/search_dencad_swat.json
     params:
+      - data
       - dencad
-      - kmeans.window_steps
-      - kmeans.min_coverage
     outs:
       - reports/dencad_swat_60steps_final.json:
           cache: false
@@ -190,9 +188,8 @@ stages:
       - data/processed/swat/swat_train.parquet
       - data/processed/swat/swat_validation.parquet
     params:
-      - dencad
-      - kmeans.window_steps
-      - kmeans.min_coverage
+      - data
+      - plain
     outs:
       - reports/search_plain_swat.json:
           cache: false
@@ -212,9 +209,8 @@ stages:
       - data/processed/swat/swat_test.parquet
       - reports/search_plain_swat.json
     params:
-      - dencad
-      - kmeans.window_steps
-      - kmeans.min_coverage
+      - data
+      - plain
     outs:
       - reports/plain_swat_60steps_final.json:
           cache: false
@@ -238,10 +234,9 @@ stages:
       - data/processed/swat/swat_train.parquet
       - data/processed/swat/swat_validation.parquet
     params:
-      - dencad
+      - data
       - sigma
-      - kmeans.window_steps
-      - kmeans.min_coverage
+      - k_sigma
     outs:
       - reports/search_sigma_swat.json:
           cache: false
@@ -266,10 +261,9 @@ stages:
       - data/processed/swat/swat_test.parquet
       - reports/search_sigma_swat.json
     params:
-      - dencad
+      - data
       - sigma
-      - kmeans.window_steps
-      - kmeans.min_coverage
+      - k_sigma
     outs:
       - reports/sigma_swat_60steps_final.json:
           cache: false
@@ -286,8 +280,9 @@ stages:
       - data/processed/swat/swat_validation.parquet
       - data/processed/swat/swat_test.parquet
     params:
+      - data
       - kmeans
-      - sigma
+      - k_sigma
     outs:
       - reports/kmeans_swat_60steps_final.json:
           cache: false
@@ -310,9 +305,8 @@ stages:
       - data/processed/hai/hai_train.parquet
       - data/processed/hai/hai_validation.parquet
     params:
+      - data
       - dencad
-      - kmeans.window_steps
-      - kmeans.min_coverage
     outs:
       - reports/search_dencad_hai.json:
           cache: false
@@ -336,9 +330,8 @@ stages:
       - data/processed/hai/hai_test.parquet
       - reports/search_dencad_hai.json
     params:
+      - data
       - dencad
-      - kmeans.window_steps
-      - kmeans.min_coverage
     outs:
       - reports/dencad_hai_30steps_final.json:
           cache: false
@@ -357,9 +350,8 @@ stages:
       - data/processed/hai/hai_train.parquet
       - data/processed/hai/hai_validation.parquet
     params:
-      - dencad
-      - kmeans.window_steps
-      - kmeans.min_coverage
+      - data
+      - plain
     outs:
       - reports/search_plain_hai.json:
           cache: false
@@ -379,9 +371,8 @@ stages:
       - data/processed/hai/hai_test.parquet
       - reports/search_plain_hai.json
     params:
-      - dencad
-      - kmeans.window_steps
-      - kmeans.min_coverage
+      - data
+      - plain
     outs:
       - reports/plain_hai_30steps_final.json:
           cache: false
@@ -405,10 +396,9 @@ stages:
       - data/processed/hai/hai_train.parquet
       - data/processed/hai/hai_validation.parquet
     params:
-      - dencad
+      - data
       - sigma
-      - kmeans.window_steps
-      - kmeans.min_coverage
+      - k_sigma
     outs:
       - reports/search_sigma_hai.json:
           cache: false
@@ -433,10 +423,9 @@ stages:
       - data/processed/hai/hai_test.parquet
       - reports/search_sigma_hai.json
     params:
-      - dencad
+      - data
       - sigma
-      - kmeans.window_steps
-      - kmeans.min_coverage
+      - k_sigma
     outs:
       - reports/sigma_hai_30steps_final.json:
           cache: false
@@ -453,8 +442,9 @@ stages:
       - data/processed/hai/hai_validation.parquet
       - data/processed/hai/hai_test.parquet
     params:
+      - data
       - kmeans
-      - sigma
+      - k_sigma
     outs:
       - reports/kmeans_hai_30steps_final.json:
           cache: false
@@ -477,9 +467,8 @@ stages:
       - data/processed/esa_rare_anomalies/esa_train.parquet
       - data/processed/esa_rare_anomalies/esa_validation.parquet
     params:
+      - data
       - dencad
-      - kmeans.window_steps
-      - kmeans.min_coverage
     outs:
       - reports/search_dencad_esa_rare_anomalies.json:
           cache: false
@@ -503,9 +492,8 @@ stages:
       - data/processed/esa_rare_anomalies/esa_test.parquet
       - reports/search_dencad_esa_rare_anomalies.json
     params:
+      - data
       - dencad
-      - kmeans.window_steps
-      - kmeans.min_coverage
     outs:
       - reports/dencad_esa_rare_anomalies_33steps_final.json:
           cache: false
@@ -524,9 +512,8 @@ stages:
       - data/processed/esa_rare_anomalies/esa_train.parquet
       - data/processed/esa_rare_anomalies/esa_validation.parquet
     params:
-      - dencad
-      - kmeans.window_steps
-      - kmeans.min_coverage
+      - data
+      - plain
     outs:
       - reports/search_plain_esa_rare_anomalies.json:
           cache: false
@@ -546,9 +533,8 @@ stages:
       - data/processed/esa_rare_anomalies/esa_test.parquet
       - reports/search_plain_esa_rare_anomalies.json
     params:
-      - dencad
-      - kmeans.window_steps
-      - kmeans.min_coverage
+      - data
+      - plain
     outs:
       - reports/plain_esa_rare_anomalies_33steps_final.json:
           cache: false
@@ -572,10 +558,9 @@ stages:
       - data/processed/esa_rare_anomalies/esa_train.parquet
       - data/processed/esa_rare_anomalies/esa_validation.parquet
     params:
-      - dencad
+      - data
       - sigma
-      - kmeans.window_steps
-      - kmeans.min_coverage
+      - k_sigma
     outs:
       - reports/search_sigma_esa_rare_anomalies.json:
           cache: false
@@ -600,10 +585,9 @@ stages:
       - data/processed/esa_rare_anomalies/esa_test.parquet
       - reports/search_sigma_esa_rare_anomalies.json
     params:
-      - dencad
+      - data
       - sigma
-      - kmeans.window_steps
-      - kmeans.min_coverage
+      - k_sigma
     outs:
       - reports/sigma_esa_rare_anomalies_33steps_final.json:
           cache: false
@@ -620,8 +604,9 @@ stages:
       - data/processed/esa_rare_anomalies/esa_validation.parquet
       - data/processed/esa_rare_anomalies/esa_test.parquet
     params:
+      - data
       - kmeans
-      - sigma
+      - k_sigma
     outs:
       - reports/kmeans_esa_rare_anomalies_33steps_final.json:
           cache: false
@@ -644,9 +629,8 @@ stages:
       - data/processed/esa_contaminated/esa_train.parquet
       - data/processed/esa_contaminated/esa_validation.parquet
     params:
+      - data
       - dencad
-      - kmeans.window_steps
-      - kmeans.min_coverage
     outs:
       - reports/search_dencad_esa_contaminated.json:
           cache: false
@@ -670,9 +654,8 @@ stages:
       - data/processed/esa_contaminated/esa_test.parquet
       - reports/search_dencad_esa_contaminated.json
     params:
+      - data
       - dencad
-      - kmeans.window_steps
-      - kmeans.min_coverage
     outs:
       - reports/dencad_esa_contaminated_33steps_final.json:
           cache: false
@@ -691,9 +674,8 @@ stages:
       - data/processed/esa_contaminated/esa_train.parquet
       - data/processed/esa_contaminated/esa_validation.parquet
     params:
-      - dencad
-      - kmeans.window_steps
-      - kmeans.min_coverage
+      - data
+      - plain
     outs:
       - reports/search_plain_esa_contaminated.json:
           cache: false
@@ -713,9 +695,8 @@ stages:
       - data/processed/esa_contaminated/esa_test.parquet
       - reports/search_plain_esa_contaminated.json
     params:
-      - dencad
-      - kmeans.window_steps
-      - kmeans.min_coverage
+      - data
+      - plain
     outs:
       - reports/plain_esa_contaminated_33steps_final.json:
           cache: false
@@ -739,10 +720,9 @@ stages:
       - data/processed/esa_contaminated/esa_train.parquet
       - data/processed/esa_contaminated/esa_validation.parquet
     params:
-      - dencad
+      - data
       - sigma
-      - kmeans.window_steps
-      - kmeans.min_coverage
+      - k_sigma
     outs:
       - reports/search_sigma_esa_contaminated.json:
           cache: false
@@ -767,10 +747,9 @@ stages:
       - data/processed/esa_contaminated/esa_test.parquet
       - reports/search_sigma_esa_contaminated.json
     params:
-      - dencad
+      - data
       - sigma
-      - kmeans.window_steps
-      - kmeans.min_coverage
+      - k_sigma
     outs:
       - reports/sigma_esa_contaminated_33steps_final.json:
           cache: false
@@ -788,8 +767,9 @@ stages:
       - data/processed/esa_contaminated/esa_validation.parquet
       - data/processed/esa_contaminated/esa_test.parquet
     params:
+      - data
       - kmeans
-      - sigma
+      - k_sigma
     outs:
       - reports/kmeans_esa_contaminated_33steps_final.json:
           cache: false

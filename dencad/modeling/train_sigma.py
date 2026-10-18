@@ -15,8 +15,8 @@ from dencad.modeling import clustering as C
 from dencad.modeling import windowing as W
 from dencad.modeling.evaluate import metrics, save_report
 from dencad.modeling.lsh import ID, NeighbourhoodGraph
-from dencad.modeling.train_dencad import _place, _pool_frame, dencad_config
-from dencad.utils import Params, PARAMS_PATH, declared_categorical
+from dencad.modeling.train_dencad import DEFAULTS, _place, _pool_frame
+from dencad.utils import declared_categorical, k_sigma, model_config
 
 PARTS = ("train", "validation", "test")
 EPS = 1e-6
@@ -49,15 +49,17 @@ def train_sigma(split_dir: Path | str, reports_dir: Path | str = Path("reports")
         overrides = {**selected.get("config", {}), **overrides}
 
     split_dir, reports_dir = Path(split_dir), Path(reports_dir)
-    cfg = {**dencad_config(), **{k: v for k, v in overrides.items() if v is not None}}
     dataset, files = W.discover(split_dir)
-    kmeans = Params.load(PARAMS_PATH)["kmeans"]
-    window_steps = window_steps or (kmeans.get("window_steps") or {}).get(dataset, 60)
-    min_coverage = float(kmeans.get("min_coverage", 0.0))
+    cfg = {**DEFAULTS, **model_config("sigma", dataset),
+           **{k: v for k, v in overrides.items() if v is not None}}
     if min_similarity is None:
-        by_dataset = cfg["min_similarity"]
-        min_similarity = float(by_dataset[dataset] if hasattr(by_dataset, "__getitem__")
-                               and not isinstance(by_dataset, float) else by_dataset)
+        min_similarity = cfg.get("min_similarity")
+    if min_similarity is None or cfg.get("window_steps") is None:
+        raise ValueError(f"params.yaml has no entry for {dataset!r} under "
+                         "data.window_steps or sigma.grid.min_similarity")
+    min_similarity = float(min_similarity)
+    window_steps = int(window_steps or cfg["window_steps"])
+    min_coverage = float(cfg["min_coverage"])
 
     logger.info("sigma on {} from {} | window {} readings | cosine >= {} | minPts {}",
                 dataset, split_dir, window_steps, min_similarity, cfg["min_pts"])
@@ -123,9 +125,7 @@ def train_sigma(split_dir: Path | str, reports_dir: Path | str = Path("reports")
     finally:
         spark.stop()
 
-    own = Params.load(PARAMS_PATH).get("sigma") or {}
-    own = own.to_dict() if hasattr(own, "to_dict") else dict(own)
-    k_values = [float(k) for k in (own.get("k_sigma") or [3.0])]
+    k_values = k_sigma()
 
     by_k = {k: {p: metrics(labels[p], scores[p], threshold=k) for p in parts}
             for k in k_values}
