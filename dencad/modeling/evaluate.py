@@ -54,4 +54,20 @@ def metrics(y: np.ndarray, score: np.ndarray,
 
 
 
-__all__ = ["metrics", "segments", "PARTS"]
+def save_report(out, model: str, dataset: str, results: dict, threshold: float,
+                config: dict, extra: Optional[dict] = None) -> dict:
+    """Write the metrics and what identifies the run"""
+    import json
+    from datetime import datetime, timezone
+    from pathlib import Path
+
+    report = {"model": model, "dataset": dataset, "threshold": float(threshold),
+              "config": config, "metrics": results, **(extra or {}),
+              "finished_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+    out = Path(out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(report, indent=2), encoding="utf-8")
+    return report
+
+
+__all__ = ["metrics", "segments", "save_report", "PARTS"]

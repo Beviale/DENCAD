@@ -39,7 +39,7 @@ import pandas as pd
 from scipy.spatial.distance import cdist
 
 from dencad.modeling import windowing as W
-from dencad.modeling.evaluate import metrics
+from dencad.modeling.evaluate import metrics, save_report
 from dencad.utils import Params, PARAMS_PATH, declared_categorical
 
 from pyspark.ml.functions import vector_to_array
@@ -78,12 +78,18 @@ def get_distributed_scorer(centroids):
     return _scorer
 
 
-def _scored(df, centroids, label: str):
-    """Labels and scores of one part, paired and in time order."""
-    rows = (df.select(W.INDEX,
-                      get_distributed_scorer(centroids)(F.col("features_arr")).alias("_s"),
-                      label)
-              .orderBy(W.INDEX).collect())
+def distance_spread(df, centroids):
+    """Mean and deviation of the training distance to the nearest centroid."""
+    got = (df.select(get_distributed_scorer(centroids)(F.col("features_arr")).alias("_d"))
+           .agg(F.avg("_d"), F.stddev_pop("_d")).collect()[0])
+    return float(got[0]), float(got[1] or 0.0)
+
+
+def _scored(df, centroids, label: str, mu: float, sd: float):
+    """Labels and scores of one part: the distance in deviations, in time order."""
+    d = get_distributed_scorer(centroids)(F.col("features_arr"))
+    score = ((d - F.lit(mu)) / F.lit(max(sd, 1e-6))).alias("_s")
+    rows = df.select(W.INDEX, score, label).orderBy(W.INDEX).collect()
     return (np.asarray([r[label] for r in rows], dtype="uint8"),
             np.asarray([r["_s"] for r in rows], dtype="float64"))
 
@@ -106,6 +112,9 @@ def train_k_means(
     seed = seed if seed is not None else cfg.get("seed", 42)
     max_iter = max_iter if max_iter is not None else cfg.get("max_iter", 50)
     workers = workers if workers is not None else cfg.get("workers", 4)
+    own = Params.load(PARAMS_PATH).get("sigma") or {}
+    own = own.to_dict() if hasattr(own, "to_dict") else dict(own)
+    k_sigma = [float(x) for x in (own.get("k_sigma") or [3.0])]
     if contaminated_refit is None:
         contaminated_refit = bool(cfg.get("contaminated_refit", False))
     if scale_windows is None:
@@ -146,20 +155,30 @@ def train_k_means(
 
         search = []
         vec_val = vec["validation"].withColumn("features_arr", vector_to_array("features"))
+        vec_train = vec["train"].withColumn("features_arr", vector_to_array("features"))
         for k in k_values:
             model = KMeans(k=k, seed=seed, maxIter=max_iter,
                            featuresCol="features").fit(vec["train"])
             centroids = model.clusterCenters()
-            y_val, s = _scored(vec_val, centroids, label)
+            mu, sd = distance_spread(vec_train, centroids)
+            y_val, s = _scored(vec_val, centroids, label, mu, sd)
             m = metrics(y_val, s)
+            by_k = {kk: metrics(y_val, s, threshold=kk) for kk in k_sigma}
+            k_best = max(k_sigma, key=lambda kk: by_k[kk]["f1"])
+            for kk in k_sigma:
+                logger.info("    k={:<3} k_sigma={:<4} precision {:.4f} recall {:.4f} "
+                            "F1 {:.4f}", k, kk, by_k[kk]["precision"],
+                            by_k[kk]["recall"], by_k[kk]["f1"])
+            m = {**m, "threshold": float(k_best), "f1": by_k[k_best]["f1"],
+                 "precision": by_k[k_best]["precision"],
+                 "recall": by_k[k_best]["recall"]}
             search.append({"k": int(k), **m})
             logger.info("  k={:<3} validation AP {:.4f} ROC-AUC {:.4f}", k, m["average_precision"], m["roc_auc"])
 
-        best = max(search, key=lambda r: r["roc_auc"])
+        best = max(search, key=lambda r: r["average_precision"])
         k_star, best_threshold, best_average_precision = best["k"], best["threshold"], best["average_precision"]
-        logger.success("selected k={} on validation ROC-AUC {:.4f} (AP {:.4f}), "
-                       "threshold {:.4f}", k_star, best["roc_auc"],
-                       best_average_precision, best_threshold)
+        logger.success("selected k={} on validation AP {:.4f} (ROC-AUC {:.4f}), threshold k_sigma={:.4f}", k_star, best_average_precision,
+                       best["roc_auc"], best_threshold)
 
         if contaminated_refit:
             refit = vec["train"].unionByName(vec["validation"])
@@ -174,15 +193,19 @@ def train_k_means(
         final = KMeans(k=k_star, seed=seed, maxIter=max_iter,
                        featuresCol="features").fit(refit)
         centroids = final.clusterCenters()
-        y_test, s = _scored(vec_test, centroids, label)
+        # the spread is re-measured on what the final model was fitted on
+        mu, sd = distance_spread(refit.withColumn("features_arr",
+                                                  vector_to_array("features")),
+                                 centroids)
+        logger.info("training distance after the refit: mean {:.4f}, deviation {:.4f}",
+                    mu, sd)
+        y_test, s = _scored(vec_test, centroids, label, mu, sd)
         best_validation_on_test_set = metrics(y_test, s, best_threshold)
         logger.info("Best validation on test set:  AP {:.4f}, ROC-AUC {:.4f}, F1 {:.4f}", 
         best_validation_on_test_set["average_precision"], best_validation_on_test_set["roc_auc"], best_validation_on_test_set["f1"])
 
         contract_out = models_dir / f"kmeans_{split_dir.name}_{window_steps}steps"
         contract_out.mkdir(parents=True, exist_ok=True)
-        test_out = reports_dir / f"kmeans_{split_dir.name}_{window_steps}steps"
-        test_out.mkdir(parents=True, exist_ok=True)
         centroids = [[float(x) for x in c] for c in final.clusterCenters()]
 
         contract = {
@@ -190,10 +213,12 @@ def train_k_means(
                 "name": "KMeans",
                 "library": "pyspark.ml.clustering",
                 "spark_version": spark.version,
-                "score": "euclidean distance to the nearest centroid",
+                "score": "distance to the nearest centroid, in training deviations",
+                "k_sigma_candidates": k_sigma,
+                "training_distance": {"mean": mu, "deviation": sd},
                 "k_candidates": [int(k) for k in k_values],
                 "k_selected": k_star,
-                "selected_by": "validation ROC-AUC",
+                "selected_by": "validation AP",
                 "seed": seed,
                 "max_iter": max_iter,
                 "refit_on": note,
@@ -208,7 +233,6 @@ def train_k_means(
                 "features": len(features),
                 "feature_columns": features,
                 "label_column": label,
-                "window_scaling": prep["scaling"],
             },
             "metrics": {"validation_search": search, "validation_best": best, "best_validation_on_test_set":best_validation_on_test_set},
             "run": {
@@ -218,41 +242,21 @@ def train_k_means(
         (contract_out / "contract.json").write_text(json.dumps(contract, indent=2),
                                            encoding="utf-8")
 
-        test_json_metrics = {
-            "model": {
-                "name": "KMeans",
-                "library": "pyspark.ml.clustering",
-                "spark_version": spark.version,
-                "score": "euclidean distance to the nearest centroid",
-                "k_candidates": [int(k) for k in k_values],
-                "k_selected": k_star,
-                "selected_by": "validation ROC-AUC",
-                "seed": seed,
-                "max_iter": max_iter,
-                "refit_on": note,
-                "refit_windows": int(n_refit),
-            },
-            "dataset": {
-                "name": dataset,
-                "split_dir": str(split_dir),
-                "window_steps": int(window_steps),
-                "source_columns": len(prep["columns"]),
-                "features": len(features),
-                "feature_columns": features,
-                "label_column": label,
-            },
-            "metrics": {"best_validation_on_test_set":best_validation_on_test_set},
-            "run": {
-                "trained_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-            },
-        }
-        (test_out / "best_validation_on_test_set.json").write_text(json.dumps(test_json_metrics, indent=2),
-                                           encoding="utf-8")
+        save_report(
+            reports_dir / f"kmeans_{split_dir.name}_{window_steps}steps_final.json",
+            "KMeans + sigma", dataset,
+            {"validation": best, "test": best_validation_on_test_set},
+            float(best_threshold),
+            {"window_steps": int(window_steps), "k": int(k_star),
+             "k_candidates": [int(x) for x in k_values],
+             "k_sigma_candidates": k_sigma, "max_iter": max_iter, "seed": seed},
+            {"stage": "final", "selected_by": "validation AP",
+             "refit_on": note, "refit_windows": int(n_refit),
+             "training_distance": {"mean": mu, "deviation": sd}})
     finally:
         spark.stop()
 
     logger.success("model and contract written to {}", contract_out)
-    logger.success("test metrics on best validation written to {}", test_out)
     return contract_out
 
 

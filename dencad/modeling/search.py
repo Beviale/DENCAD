@@ -13,19 +13,31 @@ from loguru import logger
 import random
 
 from dencad.modeling.train_dencad import dencad_config, train_dencad
+from dencad.modeling.train_plain import train_plain
+from dencad.modeling.train_sigma import train_sigma
 from dencad.modeling.windowing import discover
 
 PER_DATASET = ("min_similarity",)
+MODELS = {
+    "dencad": (train_dencad, None),
+    "plain": (train_plain, ("hidden", "latent", "layers", "learning_rate",
+                            "patience", "batch_size", "max_epochs")),
+    "sigma": (train_sigma, ("bits", "permutations", "band", "min_similarity",
+                            "min_pts", "label_change_rate", "attach_to")),
+}
 
 
-def axes(dataset: str) -> dict[str, list]:
+def axes(dataset: str, model: str = "dencad") -> dict[str, list]:
     """The grid as one list of values per parameter, this dataset's entries resolved."""
 
     section = dencad_config().get("grid") or {}
     if hasattr(section, "to_dict"):
         section = section.to_dict()
+    keep = MODELS[model][1]
     out: dict[str, list] = {}
     for name, values in section.items():
+        if keep is not None and name not in keep:
+            continue
         if name in PER_DATASET:
             values = (values.to_dict() if hasattr(values, "to_dict")
                       else values).get(dataset)
@@ -58,16 +70,17 @@ def plan(grid: dict[str, list], runs: int, seed: int = 42) -> list[dict]:
 
 
 def _write(reports_dir: Path, split_dir: Path, dataset: str,
-           grid: dict[str, list], rows: list[dict]) -> Path:
+           grid: dict[str, list], rows: list[dict], model: str = "dencad") -> Path:
     """The table and the current winner, rewritten after every run."""
 
     done = [r for r in rows if "failed" not in r]
     best = (max(done, key=lambda r: r["validation"]["average_precision"])
             if done else None)
-    out = reports_dir / f"search_{split_dir.name}.json"
+    out = reports_dir / f"search_{model}_{split_dir.name}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(
-        {"dataset": dataset, "selected_on": "validation average precision",
+        {"model": model, "dataset": dataset,
+         "selected_on": "validation average precision",
          "grid": grid, "runs": rows, "best": best}, indent=2, default=str),
         encoding="utf-8")
     return out
@@ -75,13 +88,14 @@ def _write(reports_dir: Path, split_dir: Path, dataset: str,
 
 def search(split_dir: Path | str, reports_dir: Path | str = Path("reports"),
            window_steps: Optional[int] = None, runs: int = 15,
-           seed: int = 42) -> dict:
+           seed: int = 42, model: str = "dencad") -> dict:
     """Draw 'runs' configurations, run them, write the table and the winner."""
 
     split_dir = Path(split_dir)
     reports_dir = Path(reports_dir)
     dataset, _ = discover(split_dir)
-    grid = axes(dataset)
+    trainer = MODELS[model][0]
+    grid = axes(dataset, model)
     if not grid:
         raise ValueError("the 'grid' section of params.yaml is empty")
     drawn = plan(grid, runs, seed)
@@ -93,14 +107,13 @@ def search(split_dir: Path | str, reports_dir: Path | str = Path("reports"),
 
     rows: list[dict] = []
     for i, config in enumerate(drawn, start=1):
-        if "layers" in config and "max_hops" not in grid:
+        if model == "dencad" and "layers" in config and "max_hops" not in grid:
             config = {**config, "max_hops": int(config["layers"])}
         logger.info("[{}/{}] {}", i, len(drawn),
                     ", ".join(f"{k}={v}" for k, v in config.items()))
         try:
-            report = train_dencad(split_dir, reports_dir / "select",
-                                  window_steps=window_steps, stage="select",
-                                  **config)
+            report = trainer(split_dir, reports_dir / "select",
+                             window_steps=window_steps, stage="select", **config)
         except Exception as exc:
             logger.warning("  failed: {}: {}", type(exc).__name__, exc)
             rows.append({"config": config, "failed": f"{type(exc).__name__}: {exc}"})
@@ -108,16 +121,16 @@ def search(split_dir: Path | str, reports_dir: Path | str = Path("reports"),
         val = report["metrics"]["validation"]
         rows.append({
             "config": config,
-            "epoch": int(report["model"]["epoch"]),
-            "threshold": float(report["model"]["threshold"]),
+            "epoch": int(report.get("epoch", 0)),
+            "threshold": float(report["threshold"]),
             "validation": {k: val[k] for k in ("roc_auc", "average_precision", "f1",
                                                "segments_caught", "segments")},
-            "edges": int(report["graph"]["edges"]),
+            "edges": int(report.get("graph", {}).get("edges", 0)),
         })
         logger.success("  validation AP {:.4f} ROC-AUC {:.4f} at epoch {}",
                        val["average_precision"], val["roc_auc"],
-                       report["model"]["epoch"])
-        out = _write(reports_dir, split_dir, dataset, grid, rows)
+                       report.get("epoch", 0))
+        out = _write(reports_dir, split_dir, dataset, grid, rows, model)
 
     done = [r for r in rows if "failed" not in r]
     if not done:
@@ -139,8 +152,9 @@ def main() -> None:
     ap.add_argument("--runs", type=int, default=15,
                     help="how many configurations to draw")
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--model", choices=tuple(MODELS), default="dencad")
     a = ap.parse_args()
-    search(a.split_dir, a.reports_dir, a.window_steps, a.runs, a.seed)
+    search(a.split_dir, a.reports_dir, a.window_steps, a.runs, a.seed, a.model)
 
 
 if __name__ == "__main__":

@@ -208,6 +208,34 @@ def _drop_thin_windows(out, min_coverage: float, expected: int):
                    thin, total, thin / total, floor_rows, expected, worst)
     return out.filter(F.col("_rows") >= F.lit(floor_rows))
 
+def windowed_parts(spark, files: dict, parts: Sequence[str],
+                   steps: int, categorical: Sequence[str],
+                   min_coverage: float = 0.0, scale: bool = True):
+    """Window each part, scale on train, number the rows. Labels come down, rows stay."""
+    win, labels, features, label, scaling, period = {}, {}, None, None, None, None
+    for part in parts:
+        raw = spark.read.parquet(str(files[part].resolve()))
+        columns = feature_columns(raw.columns)
+        label = label_column(raw.columns)
+        cat = [c for c in columns if c in set(categorical)]
+        if period is None:
+            period = sampling_period(raw)
+        windowed, features = window(raw, columns, steps, label, cat,
+                                    min_coverage=min_coverage, period=period)
+        if scale:
+            if part == parts[0]:
+                windowed = windowed.cache()
+                scaling = window_statistics(windowed, features)
+            windowed = apply_scaling(windowed, scaling)
+        win[part] = number_rows(windowed.select(INDEX, *features, label))
+        got = win[part].select("_id", label).orderBy("_id").toPandas()
+        labels[part] = (got[label].to_numpy() != 0).astype("uint8")
+        logger.info("  {:<11} {:>7,} windows, {:>6,} positive ({:.2%})",
+                    part, len(labels[part]), int(labels[part].sum()),
+                    labels[part].mean())
+    return win, labels, features, label, scaling, period
+
+
 def number_rows(df, order: str = INDEX, name: str = "_id"):
     ordered = (df.orderBy(order)
                  .withColumn("_part", F.spark_partition_id())
@@ -341,4 +369,5 @@ def prepare(spark, files: dict[str, Path], categorical: Sequence[str],
 
 __all__ = ["PARTS", "INDEX", "SCALE_SKIP", "session", "discover", "feature_columns",
            "label_column", "window", "scalable", "window_statistics",
-           "apply_scaling", "prepare", "number_rows", "sampling_period"]
+           "apply_scaling", "prepare", "number_rows", "sampling_period",
+           "windowed_parts"]

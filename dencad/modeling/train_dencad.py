@@ -9,6 +9,7 @@ import argparse
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
+import json
 
 from loguru import logger
 import numpy as np
@@ -24,7 +25,7 @@ from pyspark.sql import functions as F
 
 from dencad.modeling import clustering as C
 from dencad.modeling import windowing as W
-from dencad.modeling.evaluate import metrics
+from dencad.modeling.evaluate import metrics, save_report
 from dencad.modeling.lsh import ID, NeighbourhoodGraph
 from dencad.modeling.placement import nearest_grid_frames
 from dencad.utils import Params, PARAMS_PATH, declared_categorical
@@ -338,35 +339,19 @@ def train_dencad(split_dir: Path | str,
     try:
         # ---------------------------------------------------------- windowing
         declared = declared_categorical(dataset)
-        win, labels, features, label = {}, {}, None, None
-        scaling, period = None, None
         parts = PARTS if stage == "final" else ("train", "validation")
-        for part in parts:
-            raw = spark.read.parquet(str(files[part].resolve()))
-            columns = W.feature_columns(raw.columns)
-            label = W.label_column(raw.columns)
-            cat = [c for c in columns if c in set(declared)]
-            if period is None:
-                period = W.sampling_period(raw)
-            windowed, features = W.window(raw, columns, window_steps, label, cat,
-                                          min_coverage=min_coverage, period=period)
-            if cfg["scale_windows"]:
-                if part == "train":
-                    windowed = windowed.cache()
-                    scaling = W.window_statistics(windowed, features)
-                windowed = W.apply_scaling(windowed, scaling)
-            win[part] = W.number_rows(windowed.select(W.INDEX, *features, label))
-            got = win[part].select(ID, label).orderBy(ID).toPandas()
-            labels[part] = (got[label].to_numpy() != 0).astype("uint8")
-            logger.info("  {:<11} {:>7,} windows, {:>6,} positive ({:.2%})",
-                        part, len(labels[part]), int(labels[part].sum()),
-                        labels[part].mean())
+        win, labels, features, label, scaling, period = W.windowed_parts(
+            spark, files, parts, window_steps, declared,
+            min_coverage=min_coverage, scale=cfg["scale_windows"])
 
         replicas = int(cfg["replicas"])
         on_ap = stage == "select"
         if stage == "final":
             cfg["fixed_epochs"] = int(selected["epoch"])
-            extra = win["validation"].filter(F.col(label) == 0)
+            # Only the normal windows, except on the contaminated ESA case, which
+            # exists to ask what happens when they are not filtered out.
+            extra = (win["validation"] if cfg.get("contaminated_refit")
+                     else win["validation"].filter(F.col(label) == 0))
             n_extra = extra.count()
             win["train"] = W.number_rows(
                 win["train"].drop(ID).unionByName(extra.drop(ID)))
@@ -468,46 +453,24 @@ def train_dencad(split_dir: Path | str,
                            m["average_precision"], m["f1"], m["segments_caught"],
                            m["segments"])
 
-    report = {
-        "model": {
-            "name": "DENCAD: a graph autoencoder over DENCAST clusters",
-            "score": "reconstruction error of the centre of its contextual subgraph",
-            "threshold": float(carried),
-            "threshold_chosen_on": "validation, maximising F1",
-            "stage": stage,
-            "stopping_score": held_out,
-            "epoch": int(best_epoch),
-            **{k: cfg[k] for k in ("bits", "permutations", "band", "min_pts",
-                                   "label_change_rate", "attach_to", "max_members",
-                                   "max_hops",
-                                   "mask_centre", "hidden", "latent", "layers",
-                                   "learning_rate", "batch_size", "scale_windows",
-                                   "replicas", "scale_learning_rate",
-                                   "early_stopping", "seed")},
-            "min_similarity": float(min_similarity),
-        },
-        "dataset": {
-            "name": dataset, "split_dir": str(split_dir),
-            "window_steps": int(window_steps),
-            "sampling_period_seconds": int(period),
-            "window_seconds": int(window_steps) * int(period),
-            "features": len(features), "feature_columns": features,
-            "label_column": label, "window_scaling": scaling,
-            "windows": {p: int(len(labels[p])) for p in parts},
-            "base_rate": {p: float(labels[p].mean()) for p in parts},
-        },
-        "graph": {"edges": int(n_edges), "candidates": int(n_candidates),
-                  "cores": int(n_cores), **summary},
-        "metrics": results,
-        "run": {"finished_at": datetime.now(timezone.utc).isoformat(
-            timespec="seconds")},
-    }
-    reports_dir.mkdir(parents=True, exist_ok=True)
-    out = (reports_dir /
-           f"dencad_{split_dir.name}_{window_steps}steps_{stage}.json")
-    out.write_text(json.dumps(report, indent=2), encoding="utf-8")
-    logger.success("report written to {}", out)
+    report = save_report(
+        reports_dir / f"dencad_{split_dir.name}_{window_steps}steps_{stage}.json",
+        "DENCAD", dataset, results, carried,
+        {"window_steps": int(window_steps), "min_similarity": float(min_similarity), **{k: cfg[k] for k in ("bits", "permutations", "band", "min_pts", "label_change_rate", "attach_to", "max_members", "max_hops", "mask_centre", "hidden", "latent", "layers", "learning_rate", "batch_size", "patience", "replicas", "seed")}},
+        {"stage": stage, "epoch": int(best_epoch),
+         "windows": {p: int(len(labels[p])) for p in parts},
+         "graph": {"edges": int(n_edges), "clusters": summary.get("clusters")}})
     return report
+
+
+def _carry(path):
+    """The threshold and epoch to carry: from a search report or from a select one."""
+
+    d = json.loads(Path(path).read_text(encoding="utf-8"))
+    if "best" in d:
+        return d["best"]
+    return {"config": d.get("config", {}), "threshold": d["threshold"],
+            "epoch": d.get("epoch", 0)}
 
 
 def main() -> None:
@@ -542,16 +505,19 @@ def main() -> None:
     ap.add_argument("--selected", type=Path, default=None,
                     help="for --stage final: the search report to take the winning "
                          "configuration, epoch count and threshold from")
+    ap.add_argument("--contaminated-refit", action="store_true", default=None,
+                    help="keep the positives of validation in the final refit")
     ap.add_argument("--workers", type=int, default=None)
     a = ap.parse_args()
     train_dencad(a.split_dir, a.reports_dir, a.window_steps, a.min_similarity,
                   min_pts=a.min_pts, max_members=a.max_members,
                   mask_centre=a.mask_centre, latent=a.latent, layers=a.layers,
                   train_examples=a.train_examples, workers=a.workers,
+                contaminated_refit=a.contaminated_refit,
                   patience=a.patience, max_epochs=a.max_epochs,
                   max_hops=a.max_hops,
                   replicas=a.replicas, stage=a.stage,
-                  selected=(json.loads(a.selected.read_text(encoding="utf-8"))["best"]
+                  selected=(_carry(a.selected)
                             if a.selected else None))
 
 

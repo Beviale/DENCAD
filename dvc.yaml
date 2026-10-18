@@ -112,6 +112,168 @@ stages:
       - data/processed/esa_rare_anomalies/esa_validation.parquet
       - data/processed/esa_rare_anomalies/esa_test.parquet
 
+  process_esa_contaminated:
+    cmd: python -m dencad.data.process.process_esa --keep-positive-train
+    deps:
+      - dencad/data/process/process_esa.py
+      - dencad/data/process/process.py
+      - dencad/utils.py
+      - data/raw/esa/ESA-Mission2/channels.csv
+      - data/interim/esa/split
+    outs:
+      - data/processed/esa_contaminated/esa_train.parquet
+      - data/processed/esa_contaminated/esa_validation.parquet
+      - data/processed/esa_contaminated/esa_test.parquet
+
+  search_dencad_swat:
+    cmd: python -m dencad.modeling.search --split_dir data/processed/swat --model dencad --runs 15
+    deps:
+      - dencad/modeling/search.py
+      - dencad/modeling/train_dencad.py
+      - dencad/modeling/lsh.py
+      - dencad/modeling/clustering.py
+      - dencad/modeling/subgraphs.py
+      - dencad/modeling/placement.py
+      - dencad/modeling/parallel.py
+      - dencad/modeling/shards.py
+      - dencad/modeling/windowing.py
+      - dencad/modeling/evaluate.py
+      - dencad/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/swat/swat_train.parquet
+      - data/processed/swat/swat_validation.parquet
+    params:
+      - dencad
+      - kmeans.window_steps
+      - kmeans.min_coverage
+    outs:
+      - reports/search_dencad_swat.json:
+          cache: false
+
+  dencad_swat:
+    cmd: python -m dencad.modeling.train_dencad --split_dir data/processed/swat --stage final --selected reports/search_dencad_swat.json
+    deps:
+      - dencad/modeling/train_dencad.py
+      - dencad/modeling/lsh.py
+      - dencad/modeling/clustering.py
+      - dencad/modeling/subgraphs.py
+      - dencad/modeling/placement.py
+      - dencad/modeling/parallel.py
+      - dencad/modeling/shards.py
+      - dencad/modeling/windowing.py
+      - dencad/modeling/evaluate.py
+      - dencad/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/swat/swat_train.parquet
+      - data/processed/swat/swat_validation.parquet
+      - data/processed/swat/swat_test.parquet
+      - reports/search_dencad_swat.json
+    params:
+      - dencad
+      - kmeans.window_steps
+      - kmeans.min_coverage
+    outs:
+      - reports/dencad_swat_60steps_final.json:
+          cache: false
+
+  search_plain_swat:
+    cmd: python -m dencad.modeling.search --split_dir data/processed/swat --model plain --runs 16
+    deps:
+      - dencad/modeling/search.py
+      - dencad/modeling/train_plain.py
+      - dencad/modeling/train_dencad.py
+      - dencad/modeling/subgraphs.py
+      - dencad/modeling/windowing.py
+      - dencad/modeling/evaluate.py
+      - dencad/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/swat/swat_train.parquet
+      - data/processed/swat/swat_validation.parquet
+    params:
+      - dencad
+      - kmeans.window_steps
+      - kmeans.min_coverage
+    outs:
+      - reports/search_plain_swat.json:
+          cache: false
+
+  plain_swat:
+    cmd: python -m dencad.modeling.train_plain --split_dir data/processed/swat --stage final --selected reports/search_plain_swat.json
+    deps:
+      - dencad/modeling/train_plain.py
+      - dencad/modeling/train_dencad.py
+      - dencad/modeling/subgraphs.py
+      - dencad/modeling/windowing.py
+      - dencad/modeling/evaluate.py
+      - dencad/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/swat/swat_train.parquet
+      - data/processed/swat/swat_validation.parquet
+      - data/processed/swat/swat_test.parquet
+      - reports/search_plain_swat.json
+    params:
+      - dencad
+      - kmeans.window_steps
+      - kmeans.min_coverage
+    outs:
+      - reports/plain_swat_60steps_final.json:
+          cache: false
+
+  search_sigma_swat:
+    cmd: python -m dencad.modeling.search --split_dir data/processed/swat --model sigma --runs 15
+    deps:
+      - dencad/modeling/search.py
+      - dencad/modeling/train_sigma.py
+      - dencad/modeling/train_dencad.py
+      - dencad/modeling/lsh.py
+      - dencad/modeling/clustering.py
+      - dencad/modeling/subgraphs.py
+      - dencad/modeling/placement.py
+      - dencad/modeling/parallel.py
+      - dencad/modeling/shards.py
+      - dencad/modeling/windowing.py
+      - dencad/modeling/evaluate.py
+      - dencad/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/swat/swat_train.parquet
+      - data/processed/swat/swat_validation.parquet
+    params:
+      - dencad
+      - sigma
+      - kmeans.window_steps
+      - kmeans.min_coverage
+    outs:
+      - reports/search_sigma_swat.json:
+          cache: false
+
+  sigma_swat:
+    cmd: python -m dencad.modeling.train_sigma --split_dir data/processed/swat --stage final --selected reports/search_sigma_swat.json
+    deps:
+      - dencad/modeling/train_sigma.py
+      - dencad/modeling/train_dencad.py
+      - dencad/modeling/lsh.py
+      - dencad/modeling/clustering.py
+      - dencad/modeling/subgraphs.py
+      - dencad/modeling/placement.py
+      - dencad/modeling/parallel.py
+      - dencad/modeling/shards.py
+      - dencad/modeling/windowing.py
+      - dencad/modeling/evaluate.py
+      - dencad/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/swat/swat_train.parquet
+      - data/processed/swat/swat_validation.parquet
+      - data/processed/swat/swat_test.parquet
+      - reports/search_sigma_swat.json
+    params:
+      - dencad
+      - sigma
+      - kmeans.window_steps
+      - kmeans.min_coverage
+    outs:
+      - reports/sigma_swat_60steps_final.json:
+          cache: false
+
   kmeans_swat:
     cmd: python -m dencad.modeling.train_k_means --split_dir data/processed/swat
     deps:
@@ -125,10 +287,158 @@ stages:
       - data/processed/swat/swat_test.parquet
     params:
       - kmeans
+      - sigma
     outs:
-      - models/kmeans_swat_60steps/contract.json:
+      - reports/kmeans_swat_60steps_final.json:
           cache: false
-      - reports/kmeans_swat_60steps/best_validation_on_test_set.json:
+
+  search_dencad_hai:
+    cmd: python -m dencad.modeling.search --split_dir data/processed/hai --model dencad --runs 15
+    deps:
+      - dencad/modeling/search.py
+      - dencad/modeling/train_dencad.py
+      - dencad/modeling/lsh.py
+      - dencad/modeling/clustering.py
+      - dencad/modeling/subgraphs.py
+      - dencad/modeling/placement.py
+      - dencad/modeling/parallel.py
+      - dencad/modeling/shards.py
+      - dencad/modeling/windowing.py
+      - dencad/modeling/evaluate.py
+      - dencad/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/hai/hai_train.parquet
+      - data/processed/hai/hai_validation.parquet
+    params:
+      - dencad
+      - kmeans.window_steps
+      - kmeans.min_coverage
+    outs:
+      - reports/search_dencad_hai.json:
+          cache: false
+
+  dencad_hai:
+    cmd: python -m dencad.modeling.train_dencad --split_dir data/processed/hai --stage final --selected reports/search_dencad_hai.json
+    deps:
+      - dencad/modeling/train_dencad.py
+      - dencad/modeling/lsh.py
+      - dencad/modeling/clustering.py
+      - dencad/modeling/subgraphs.py
+      - dencad/modeling/placement.py
+      - dencad/modeling/parallel.py
+      - dencad/modeling/shards.py
+      - dencad/modeling/windowing.py
+      - dencad/modeling/evaluate.py
+      - dencad/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/hai/hai_train.parquet
+      - data/processed/hai/hai_validation.parquet
+      - data/processed/hai/hai_test.parquet
+      - reports/search_dencad_hai.json
+    params:
+      - dencad
+      - kmeans.window_steps
+      - kmeans.min_coverage
+    outs:
+      - reports/dencad_hai_30steps_final.json:
+          cache: false
+
+  search_plain_hai:
+    cmd: python -m dencad.modeling.search --split_dir data/processed/hai --model plain --runs 16
+    deps:
+      - dencad/modeling/search.py
+      - dencad/modeling/train_plain.py
+      - dencad/modeling/train_dencad.py
+      - dencad/modeling/subgraphs.py
+      - dencad/modeling/windowing.py
+      - dencad/modeling/evaluate.py
+      - dencad/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/hai/hai_train.parquet
+      - data/processed/hai/hai_validation.parquet
+    params:
+      - dencad
+      - kmeans.window_steps
+      - kmeans.min_coverage
+    outs:
+      - reports/search_plain_hai.json:
+          cache: false
+
+  plain_hai:
+    cmd: python -m dencad.modeling.train_plain --split_dir data/processed/hai --stage final --selected reports/search_plain_hai.json
+    deps:
+      - dencad/modeling/train_plain.py
+      - dencad/modeling/train_dencad.py
+      - dencad/modeling/subgraphs.py
+      - dencad/modeling/windowing.py
+      - dencad/modeling/evaluate.py
+      - dencad/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/hai/hai_train.parquet
+      - data/processed/hai/hai_validation.parquet
+      - data/processed/hai/hai_test.parquet
+      - reports/search_plain_hai.json
+    params:
+      - dencad
+      - kmeans.window_steps
+      - kmeans.min_coverage
+    outs:
+      - reports/plain_hai_30steps_final.json:
+          cache: false
+
+  search_sigma_hai:
+    cmd: python -m dencad.modeling.search --split_dir data/processed/hai --model sigma --runs 15
+    deps:
+      - dencad/modeling/search.py
+      - dencad/modeling/train_sigma.py
+      - dencad/modeling/train_dencad.py
+      - dencad/modeling/lsh.py
+      - dencad/modeling/clustering.py
+      - dencad/modeling/subgraphs.py
+      - dencad/modeling/placement.py
+      - dencad/modeling/parallel.py
+      - dencad/modeling/shards.py
+      - dencad/modeling/windowing.py
+      - dencad/modeling/evaluate.py
+      - dencad/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/hai/hai_train.parquet
+      - data/processed/hai/hai_validation.parquet
+    params:
+      - dencad
+      - sigma
+      - kmeans.window_steps
+      - kmeans.min_coverage
+    outs:
+      - reports/search_sigma_hai.json:
+          cache: false
+
+  sigma_hai:
+    cmd: python -m dencad.modeling.train_sigma --split_dir data/processed/hai --stage final --selected reports/search_sigma_hai.json
+    deps:
+      - dencad/modeling/train_sigma.py
+      - dencad/modeling/train_dencad.py
+      - dencad/modeling/lsh.py
+      - dencad/modeling/clustering.py
+      - dencad/modeling/subgraphs.py
+      - dencad/modeling/placement.py
+      - dencad/modeling/parallel.py
+      - dencad/modeling/shards.py
+      - dencad/modeling/windowing.py
+      - dencad/modeling/evaluate.py
+      - dencad/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/hai/hai_train.parquet
+      - data/processed/hai/hai_validation.parquet
+      - data/processed/hai/hai_test.parquet
+      - reports/search_sigma_hai.json
+    params:
+      - dencad
+      - sigma
+      - kmeans.window_steps
+      - kmeans.min_coverage
+    outs:
+      - reports/sigma_hai_30steps_final.json:
           cache: false
 
   kmeans_hai:
@@ -144,10 +454,158 @@ stages:
       - data/processed/hai/hai_test.parquet
     params:
       - kmeans
+      - sigma
     outs:
-      - models/kmeans_hai_30steps/contract.json:
+      - reports/kmeans_hai_30steps_final.json:
           cache: false
-      - reports/kmeans_hai_30steps/best_validation_on_test_set.json:
+
+  search_dencad_esa:
+    cmd: python -m dencad.modeling.search --split_dir data/processed/esa_rare_anomalies --model dencad --runs 15
+    deps:
+      - dencad/modeling/search.py
+      - dencad/modeling/train_dencad.py
+      - dencad/modeling/lsh.py
+      - dencad/modeling/clustering.py
+      - dencad/modeling/subgraphs.py
+      - dencad/modeling/placement.py
+      - dencad/modeling/parallel.py
+      - dencad/modeling/shards.py
+      - dencad/modeling/windowing.py
+      - dencad/modeling/evaluate.py
+      - dencad/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/esa_rare_anomalies/esa_train.parquet
+      - data/processed/esa_rare_anomalies/esa_validation.parquet
+    params:
+      - dencad
+      - kmeans.window_steps
+      - kmeans.min_coverage
+    outs:
+      - reports/search_dencad_esa_rare_anomalies.json:
+          cache: false
+
+  dencad_esa:
+    cmd: python -m dencad.modeling.train_dencad --split_dir data/processed/esa_rare_anomalies --stage final --selected reports/search_dencad_esa_rare_anomalies.json
+    deps:
+      - dencad/modeling/train_dencad.py
+      - dencad/modeling/lsh.py
+      - dencad/modeling/clustering.py
+      - dencad/modeling/subgraphs.py
+      - dencad/modeling/placement.py
+      - dencad/modeling/parallel.py
+      - dencad/modeling/shards.py
+      - dencad/modeling/windowing.py
+      - dencad/modeling/evaluate.py
+      - dencad/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/esa_rare_anomalies/esa_train.parquet
+      - data/processed/esa_rare_anomalies/esa_validation.parquet
+      - data/processed/esa_rare_anomalies/esa_test.parquet
+      - reports/search_dencad_esa_rare_anomalies.json
+    params:
+      - dencad
+      - kmeans.window_steps
+      - kmeans.min_coverage
+    outs:
+      - reports/dencad_esa_rare_anomalies_33steps_final.json:
+          cache: false
+
+  search_plain_esa:
+    cmd: python -m dencad.modeling.search --split_dir data/processed/esa_rare_anomalies --model plain --runs 16
+    deps:
+      - dencad/modeling/search.py
+      - dencad/modeling/train_plain.py
+      - dencad/modeling/train_dencad.py
+      - dencad/modeling/subgraphs.py
+      - dencad/modeling/windowing.py
+      - dencad/modeling/evaluate.py
+      - dencad/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/esa_rare_anomalies/esa_train.parquet
+      - data/processed/esa_rare_anomalies/esa_validation.parquet
+    params:
+      - dencad
+      - kmeans.window_steps
+      - kmeans.min_coverage
+    outs:
+      - reports/search_plain_esa_rare_anomalies.json:
+          cache: false
+
+  plain_esa:
+    cmd: python -m dencad.modeling.train_plain --split_dir data/processed/esa_rare_anomalies --stage final --selected reports/search_plain_esa_rare_anomalies.json
+    deps:
+      - dencad/modeling/train_plain.py
+      - dencad/modeling/train_dencad.py
+      - dencad/modeling/subgraphs.py
+      - dencad/modeling/windowing.py
+      - dencad/modeling/evaluate.py
+      - dencad/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/esa_rare_anomalies/esa_train.parquet
+      - data/processed/esa_rare_anomalies/esa_validation.parquet
+      - data/processed/esa_rare_anomalies/esa_test.parquet
+      - reports/search_plain_esa_rare_anomalies.json
+    params:
+      - dencad
+      - kmeans.window_steps
+      - kmeans.min_coverage
+    outs:
+      - reports/plain_esa_rare_anomalies_33steps_final.json:
+          cache: false
+
+  search_sigma_esa:
+    cmd: python -m dencad.modeling.search --split_dir data/processed/esa_rare_anomalies --model sigma --runs 15
+    deps:
+      - dencad/modeling/search.py
+      - dencad/modeling/train_sigma.py
+      - dencad/modeling/train_dencad.py
+      - dencad/modeling/lsh.py
+      - dencad/modeling/clustering.py
+      - dencad/modeling/subgraphs.py
+      - dencad/modeling/placement.py
+      - dencad/modeling/parallel.py
+      - dencad/modeling/shards.py
+      - dencad/modeling/windowing.py
+      - dencad/modeling/evaluate.py
+      - dencad/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/esa_rare_anomalies/esa_train.parquet
+      - data/processed/esa_rare_anomalies/esa_validation.parquet
+    params:
+      - dencad
+      - sigma
+      - kmeans.window_steps
+      - kmeans.min_coverage
+    outs:
+      - reports/search_sigma_esa_rare_anomalies.json:
+          cache: false
+
+  sigma_esa:
+    cmd: python -m dencad.modeling.train_sigma --split_dir data/processed/esa_rare_anomalies --stage final --selected reports/search_sigma_esa_rare_anomalies.json
+    deps:
+      - dencad/modeling/train_sigma.py
+      - dencad/modeling/train_dencad.py
+      - dencad/modeling/lsh.py
+      - dencad/modeling/clustering.py
+      - dencad/modeling/subgraphs.py
+      - dencad/modeling/placement.py
+      - dencad/modeling/parallel.py
+      - dencad/modeling/shards.py
+      - dencad/modeling/windowing.py
+      - dencad/modeling/evaluate.py
+      - dencad/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/esa_rare_anomalies/esa_train.parquet
+      - data/processed/esa_rare_anomalies/esa_validation.parquet
+      - data/processed/esa_rare_anomalies/esa_test.parquet
+      - reports/search_sigma_esa_rare_anomalies.json
+    params:
+      - dencad
+      - sigma
+      - kmeans.window_steps
+      - kmeans.min_coverage
+    outs:
+      - reports/sigma_esa_rare_anomalies_33steps_final.json:
           cache: false
 
   kmeans_esa:
@@ -163,14 +621,13 @@ stages:
       - data/processed/esa_rare_anomalies/esa_test.parquet
     params:
       - kmeans
+      - sigma
     outs:
-      - models/kmeans_esa_rare_anomalies_33steps/contract.json:
-          cache: false
-      - reports/kmeans_esa_rare_anomalies_33steps/best_validation_on_test_set.json:
+      - reports/kmeans_esa_rare_anomalies_33steps_final.json:
           cache: false
 
-  search_swat:
-    cmd: python -m dencad.modeling.search data/processed/swat
+  search_dencad_esa_contaminated:
+    cmd: python -m dencad.modeling.search --split_dir data/processed/esa_contaminated --model dencad --runs 15
     deps:
       - dencad/modeling/search.py
       - dencad/modeling/train_dencad.py
@@ -184,19 +641,18 @@ stages:
       - dencad/modeling/evaluate.py
       - dencad/utils.py
       - data/raw/categorical_columns.yaml
-      - data/processed/swat/swat_train.parquet
-      - data/processed/swat/swat_validation.parquet
+      - data/processed/esa_contaminated/esa_train.parquet
+      - data/processed/esa_contaminated/esa_validation.parquet
     params:
       - dencad
       - kmeans.window_steps
       - kmeans.min_coverage
     outs:
-      - reports/search_swat.json:
+      - reports/search_dencad_esa_contaminated.json:
           cache: false
 
-  dencad_swat:
-    cmd: python -m dencad.modeling.train_dencad data/processed/swat
-      --stage final --selected reports/search_swat.json
+  dencad_esa_contaminated:
+    cmd: python -m dencad.modeling.train_dencad --split_dir data/processed/esa_contaminated --stage final --selected reports/search_dencad_esa_contaminated.json --contaminated-refit
     deps:
       - dencad/modeling/train_dencad.py
       - dencad/modeling/lsh.py
@@ -209,99 +665,66 @@ stages:
       - dencad/modeling/evaluate.py
       - dencad/utils.py
       - data/raw/categorical_columns.yaml
-      - data/processed/swat/swat_train.parquet
-      - data/processed/swat/swat_validation.parquet
-      - data/processed/swat/swat_test.parquet
-      - reports/search_swat.json
+      - data/processed/esa_contaminated/esa_train.parquet
+      - data/processed/esa_contaminated/esa_validation.parquet
+      - data/processed/esa_contaminated/esa_test.parquet
+      - reports/search_dencad_esa_contaminated.json
     params:
       - dencad
       - kmeans.window_steps
       - kmeans.min_coverage
     outs:
-      - reports/dencad_swat_60steps_final.json:
+      - reports/dencad_esa_contaminated_33steps_final.json:
           cache: false
 
-  search_hai:
-    cmd: python -m dencad.modeling.search data/processed/hai
-    deps:
-      - dencad/modeling/search.py
-      - dencad/modeling/train_dencad.py
-      - dencad/modeling/lsh.py
-      - dencad/modeling/clustering.py
-      - dencad/modeling/subgraphs.py
-      - dencad/modeling/placement.py
-      - dencad/modeling/parallel.py
-      - dencad/modeling/shards.py
-      - dencad/modeling/windowing.py
-      - dencad/modeling/evaluate.py
-      - dencad/utils.py
-      - data/raw/categorical_columns.yaml
-      - data/processed/hai/hai_train.parquet
-      - data/processed/hai/hai_validation.parquet
-    params:
-      - dencad
-      - kmeans.window_steps
-      - kmeans.min_coverage
-    outs:
-      - reports/search_hai.json:
-          cache: false
-
-  dencad_hai:
-    cmd: python -m dencad.modeling.train_dencad data/processed/hai
-      --stage final --selected reports/search_hai.json
-    deps:
-      - dencad/modeling/train_dencad.py
-      - dencad/modeling/lsh.py
-      - dencad/modeling/clustering.py
-      - dencad/modeling/subgraphs.py
-      - dencad/modeling/placement.py
-      - dencad/modeling/parallel.py
-      - dencad/modeling/shards.py
-      - dencad/modeling/windowing.py
-      - dencad/modeling/evaluate.py
-      - dencad/utils.py
-      - data/raw/categorical_columns.yaml
-      - data/processed/hai/hai_train.parquet
-      - data/processed/hai/hai_validation.parquet
-      - data/processed/hai/hai_test.parquet
-      - reports/search_hai.json
-    params:
-      - dencad
-      - kmeans.window_steps
-      - kmeans.min_coverage
-    outs:
-      - reports/dencad_hai_30steps_final.json:
-          cache: false
-
-  search_esa:
-    cmd: python -m dencad.modeling.search data/processed/esa_rare_anomalies
+  search_plain_esa_contaminated:
+    cmd: python -m dencad.modeling.search --split_dir data/processed/esa_contaminated --model plain --runs 16
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/train_plain.py
       - dencad/modeling/train_dencad.py
-      - dencad/modeling/lsh.py
-      - dencad/modeling/clustering.py
       - dencad/modeling/subgraphs.py
-      - dencad/modeling/placement.py
-      - dencad/modeling/parallel.py
-      - dencad/modeling/shards.py
       - dencad/modeling/windowing.py
       - dencad/modeling/evaluate.py
       - dencad/utils.py
       - data/raw/categorical_columns.yaml
-      - data/processed/esa_rare_anomalies/esa_train.parquet
-      - data/processed/esa_rare_anomalies/esa_validation.parquet
+      - data/processed/esa_contaminated/esa_train.parquet
+      - data/processed/esa_contaminated/esa_validation.parquet
     params:
       - dencad
       - kmeans.window_steps
       - kmeans.min_coverage
     outs:
-      - reports/search_esa_rare_anomalies.json:
+      - reports/search_plain_esa_contaminated.json:
           cache: false
 
-  dencad_esa:
-    cmd: python -m dencad.modeling.train_dencad data/processed/esa_rare_anomalies
-      --stage final --selected reports/search_esa_rare_anomalies.json
+  plain_esa_contaminated:
+    cmd: python -m dencad.modeling.train_plain --split_dir data/processed/esa_contaminated --stage final --selected reports/search_plain_esa_contaminated.json --contaminated-refit
     deps:
+      - dencad/modeling/train_plain.py
+      - dencad/modeling/train_dencad.py
+      - dencad/modeling/subgraphs.py
+      - dencad/modeling/windowing.py
+      - dencad/modeling/evaluate.py
+      - dencad/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/esa_contaminated/esa_train.parquet
+      - data/processed/esa_contaminated/esa_validation.parquet
+      - data/processed/esa_contaminated/esa_test.parquet
+      - reports/search_plain_esa_contaminated.json
+    params:
+      - dencad
+      - kmeans.window_steps
+      - kmeans.min_coverage
+    outs:
+      - reports/plain_esa_contaminated_33steps_final.json:
+          cache: false
+
+  search_sigma_esa_contaminated:
+    cmd: python -m dencad.modeling.search --split_dir data/processed/esa_contaminated --model sigma --runs 15
+    deps:
+      - dencad/modeling/search.py
+      - dencad/modeling/train_sigma.py
       - dencad/modeling/train_dencad.py
       - dencad/modeling/lsh.py
       - dencad/modeling/clustering.py
@@ -313,14 +736,60 @@ stages:
       - dencad/modeling/evaluate.py
       - dencad/utils.py
       - data/raw/categorical_columns.yaml
-      - data/processed/esa_rare_anomalies/esa_train.parquet
-      - data/processed/esa_rare_anomalies/esa_validation.parquet
-      - data/processed/esa_rare_anomalies/esa_test.parquet
-      - reports/search_esa_rare_anomalies.json
+      - data/processed/esa_contaminated/esa_train.parquet
+      - data/processed/esa_contaminated/esa_validation.parquet
     params:
       - dencad
+      - sigma
       - kmeans.window_steps
       - kmeans.min_coverage
     outs:
-      - reports/dencad_esa_rare_anomalies_33steps_final.json:
+      - reports/search_sigma_esa_contaminated.json:
+          cache: false
+
+  sigma_esa_contaminated:
+    cmd: python -m dencad.modeling.train_sigma --split_dir data/processed/esa_contaminated --stage final --selected reports/search_sigma_esa_contaminated.json --contaminated-refit
+    deps:
+      - dencad/modeling/train_sigma.py
+      - dencad/modeling/train_dencad.py
+      - dencad/modeling/lsh.py
+      - dencad/modeling/clustering.py
+      - dencad/modeling/subgraphs.py
+      - dencad/modeling/placement.py
+      - dencad/modeling/parallel.py
+      - dencad/modeling/shards.py
+      - dencad/modeling/windowing.py
+      - dencad/modeling/evaluate.py
+      - dencad/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/esa_contaminated/esa_train.parquet
+      - data/processed/esa_contaminated/esa_validation.parquet
+      - data/processed/esa_contaminated/esa_test.parquet
+      - reports/search_sigma_esa_contaminated.json
+    params:
+      - dencad
+      - sigma
+      - kmeans.window_steps
+      - kmeans.min_coverage
+    outs:
+      - reports/sigma_esa_contaminated_33steps_final.json:
+          cache: false
+
+  kmeans_esa_contaminated:
+    cmd: python -m dencad.modeling.train_k_means --split_dir data/processed/esa_contaminated
+      --contaminated-refit
+    deps:
+      - dencad/modeling/train_k_means.py
+      - dencad/modeling/windowing.py
+      - dencad/modeling/evaluate.py
+      - dencad/utils.py
+      - data/raw/categorical_columns.yaml
+      - data/processed/esa_contaminated/esa_train.parquet
+      - data/processed/esa_contaminated/esa_validation.parquet
+      - data/processed/esa_contaminated/esa_test.parquet
+    params:
+      - kmeans
+      - sigma
+    outs:
+      - reports/kmeans_esa_contaminated_33steps_final.json:
           cache: false

@@ -28,6 +28,7 @@ class EsaProcessor(Processor):
         pearson_max: float = 0.99,
         cramer_max: float = 0.99,
         rare_counts_as_positive: bool = True,
+        drop_positive_train: bool = True,
         meta_path: Path = Path("data/raw/esa/ESA-Mission2/channels.csv"),
     ) -> None:
         if categorical is None:
@@ -43,13 +44,20 @@ class EsaProcessor(Processor):
                          categorical=categorical, pearson_max=pearson_max,
                          cramer_max=cramer_max)
         self.rare_counts_as_positive = rare_counts_as_positive
+        # False leaves the positives in train: the contaminated setting, where the
+        # model has to find anomalies it was also fitted on.
+        self.drop_positive_train = drop_positive_train
 
     def prepare_train(self, train: pd.DataFrame) -> pd.DataFrame:
-        """Drop the training rows that are positive."""
+        """Drop the training rows that are positive, unless the run wants them kept."""
         pos = train[ANOMALY].to_numpy()
         if self.rare_counts_as_positive:
             pos = pos | train[RARE].to_numpy()
         drop = pos != 0
+        if not self.drop_positive_train:
+            logger.info("contaminated training set: {:,} positive rows of {:,} kept "
+                        "({:.2%})", int(drop.sum()), len(train), drop.mean())
+            return train
         kept_rare = int(train.loc[~drop, RARE].to_numpy().sum())
         logger.info("training rows dropped as positive under this label: {:,} of "
                     "{:,} ({:.2%})", int(drop.sum()), len(train), drop.mean())
@@ -75,10 +83,19 @@ class EsaProcessor(Processor):
 
 
 def main() -> None:
-    for folder, rare in MODES.items():
-        logger.info("=== {} ===", folder)
-        EsaProcessor(out_dir=Path("data/processed") / folder,
-                     rare_counts_as_positive=rare).run(overwrite=True)
+    import argparse
+
+    ap = argparse.ArgumentParser(description="Process the ESA split.")
+    ap.add_argument("--keep-positive-train", action="store_true",
+                    help="leave the positive rows in train: the contaminated setting")
+    ap.add_argument("--out-dir", type=Path, default=None)
+    a = ap.parse_args()
+    folder = a.out_dir or (Path("data/processed") /
+                           ("esa_contaminated" if a.keep_positive_train
+                            else "esa_rare_anomalies"))
+    logger.info("=== {} ===", folder.name)
+    EsaProcessor(out_dir=folder, rare_counts_as_positive=True,
+                 drop_positive_train=not a.keep_positive_train).run(overwrite=True)
 
 
 if __name__ == "__main__":
