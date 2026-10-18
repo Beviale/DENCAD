@@ -412,8 +412,7 @@ def train_dencad(split_dir: Path | str,
         carried = float(selected["threshold"])
         logger.info("threshold carried from the selection at {:.6f}", carried)
 
-    # Train holds no positives, so every rate on it is zero by construction: what the
-    # fit is worth there is the reconstruction error, not a score.
+
     train_loss = float(np.mean(scores["train"]))
     logger.info("mean reconstruction error on train {:.6f}", train_loss)
     results = {}
