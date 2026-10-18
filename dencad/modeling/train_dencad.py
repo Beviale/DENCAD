@@ -412,24 +412,28 @@ def train_dencad(split_dir: Path | str,
         carried = float(selected["threshold"])
         logger.info("threshold carried from the selection at {:.6f}", carried)
 
+    # Train holds no positives, so every rate on it is zero by construction: what the
+    # fit is worth there is the reconstruction error, not a score.
+    train_loss = float(np.mean(scores["train"]))
+    logger.info("mean reconstruction error on train {:.6f}", train_loss)
     results = {}
-    for part in parts:
+    for part in [p for p in parts if p != "train"]:
         m = metrics(labels[part], scores[part],
                     threshold=carried if part != "validation" else None)
         results[part] = m
-        if m["roc_auc"] is not None:
-            logger.success("  {:<11} ROC-AUC {:.4f}  AP {:.4f}  F1 {:.4f}  "
-                           "segments {}/{}", part, m["roc_auc"],
-                           m["average_precision"], m["f1"], m["segments_caught"],
-                           m["segments"])
+        logger.success("  {:<11} ROC-AUC {:.4f}  AP {:.4f}  F1 {:.4f}  "
+                       "segments {}/{}", part, m["roc_auc"],
+                       m["average_precision"], m["f1"], m["segments_caught"],
+                       m["segments"])
 
     report = save_report(
         reports_dir / f"dencad_{split_dir.name}_{window_steps}steps_{stage}.json",
         "DENCAD", dataset, results, carried,
         {"window_steps": int(window_steps), "min_similarity": float(min_similarity), **{k: cfg[k] for k in ("bits", "permutations", "band", "min_pts", "label_change_rate", "attach_to", "max_members", "mask_centre", "hidden", "latent", "layers", "learning_rate", "batch_size", "patience", "replicas", "seed")}},
-        {"stage": stage, "epoch": int(best_epoch),
+        {"stage": stage, "epoch": int(best_epoch), "train_loss": train_loss,
          "windows": {p: int(len(labels[p])) for p in parts},
-         "graph": {"edges": int(n_edges), "clusters": summary.get("clusters")}})
+         "graph": {"edges": int(n_edges), "clusters": summary.get("clusters")}},
+        write=(stage == "final"))
     return report
 
 

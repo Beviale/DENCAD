@@ -169,23 +169,25 @@ def train_plain(split_dir: Path | str, reports_dir: Path | str = Path("reports")
         carried = float(selected["threshold"])
         logger.info("threshold carried from the selection at {:.6f}", carried)
 
+    train_loss = float(np.mean(scores["train"]))
+    logger.info("mean reconstruction error on train {:.6f}", train_loss)
     results = {}
-    for part in parts:
+    for part in [p for p in parts if p != "train"]:
         m = metrics(labels[part], scores[part],
                     threshold=carried if part != "validation" else None)
         results[part] = m
-        if m["roc_auc"] is not None:
-            logger.success("  {:<11} ROC-AUC {:.4f}  AP {:.4f}  F1 {:.4f}  "
-                           "segments {}/{}", part, m["roc_auc"],
-                           m["average_precision"], m["f1"], m["segments_caught"],
-                           m["segments"])
+        logger.success("  {:<11} ROC-AUC {:.4f}  AP {:.4f}  F1 {:.4f}  "
+                       "segments {}/{}", part, m["roc_auc"],
+                       m["average_precision"], m["f1"], m["segments_caught"],
+                       m["segments"])
 
     report = save_report(
         reports_dir / f"plain_{split_dir.name}_{window_steps}steps_{stage}.json",
         "plain autoencoder", dataset, results, carried,
         {"window_steps": int(window_steps), **{k: cfg[k] for k in ("hidden", "latent", "layers", "learning_rate", "batch_size", "patience", "mask_centre", "seed")}},
-        {"stage": stage, "epoch": int(epoch),
-         "windows": {p: int(len(labels[p])) for p in parts}})
+        {"stage": stage, "epoch": int(epoch), "train_loss": train_loss,
+         "windows": {p: int(len(labels[p])) for p in parts}},
+        write=(stage == "final"))
     return report
 
 

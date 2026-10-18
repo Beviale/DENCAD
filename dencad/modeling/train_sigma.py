@@ -114,19 +114,20 @@ def train_sigma(split_dir: Path | str, reports_dir: Path | str = Path("reports")
         placed = {p: _place(spark, win[p], pool, features, exclude_self=(p == "train"))
                   for p in parts}
 
-        # mu and sd per cluster, from the training cosines
         spread = placed["train"].agg(F.avg("_sim"),
                                       F.stddev_pop("_sim")).collect()[0]
         mu, sd = float(spread[0]), float(spread[1] or 0.0)
         logger.info("training cosine: mean {:.4f}, deviation {:.4f}", mu, sd)
 
-        scores = {p: _scores(placed[p], mu, sd, len(labels[p])) for p in parts}
+   
+        scored_parts = [p for p in parts if p != "train"]
+        scores = {p: _scores(placed[p], mu, sd, len(labels[p])) for p in scored_parts}
     finally:
         spark.stop()
 
     k_values = k_sigma()
 
-    by_k = {k: {p: metrics(labels[p], scores[p], threshold=k) for p in parts}
+    by_k = {k: {p: metrics(labels[p], scores[p], threshold=k) for p in scored_parts}
             for k in k_values}
     for k in k_values:
         v = by_k[k]["validation"]
@@ -145,22 +146,23 @@ def train_sigma(split_dir: Path | str, reports_dir: Path | str = Path("reports")
                     by_k[carried]["validation"]["f1"], fine["f1"], fine["threshold"])
 
     results = {}
-    for part in parts:
+    for part in scored_parts:
         m = metrics(labels[part], scores[part], threshold=carried)
         results[part] = m
-        if m["roc_auc"] is not None:
-            logger.success("  {:<11} ROC-AUC {:.4f}  AP {:.4f}  F1 {:.4f}  "
-                           "segments {}/{}", part, m["roc_auc"],
-                           m["average_precision"], m["f1"], m["segments_caught"],
-                           m["segments"])
+        logger.success("  {:<11} ROC-AUC {:.4f}  AP {:.4f}  F1 {:.4f}  "
+                       "segments {}/{}", part, m["roc_auc"],
+                       m["average_precision"], m["f1"], m["segments_caught"],
+                       m["segments"])
 
     report = save_report(
         reports_dir / f"sigma_{split_dir.name}_{window_steps}steps_{stage}.json",
         "DENCAST + sigma", dataset, results, carried,
         {"window_steps": int(window_steps), "min_similarity": float(min_similarity), **{k: cfg[k] for k in ("bits", "permutations", "band", "min_pts", "label_change_rate", "attach_to", "seed")}},
         {"stage": stage, "k_sigma": float(carried),
+         "training_cosine": {"mean": mu, "deviation": sd},
          "windows": {p: int(len(labels[p])) for p in parts},
-         "graph": {"edges": int(n_edges), "clusters": summary.get("clusters")}})
+         "graph": {"edges": int(n_edges), "clusters": summary.get("clusters")}},
+        write=(stage == "final"))
     return report
 
 
