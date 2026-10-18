@@ -8,7 +8,7 @@ from loguru import logger
 from pyspark.sql import functions as F
 
 
-SRC, DST, SIM = "_src", "_dst", "similarity"
+SRC, DST, DIST = "_src", "_dst", "distance"
 NODE, CLUSTER = "_node", "_cluster"
 NOISE = 0
 
@@ -105,4 +105,4 @@ def summarise(state, label: str = "clusters") -> dict:
 
 
 __all__ = ["core_objects", "find_clusters", "summarise",
-           "SRC", "DST", "SIM", "NODE", "CLUSTER", "NOISE"]
+           "SRC", "DST", "DIST", "NODE", "CLUSTER", "NOISE"]

@@ -1,4 +1,4 @@
-"""The neighbourhood graph of DENCAST, built with random-hyperplane LSH."""
+"""The neighbourhood graph of DENCAST, built with p-stable LSH."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from pyspark.sql import Window as SparkWindow
 DEFAULT_BITS = 16
 DEFAULT_PERMUTATIONS = 30
 DEFAULT_BAND = 30
-DEFAULT_MIN_SIMILARITY = 0.9
+DEFAULT_EPS = 1.0
 ID = "_id"
 
 
@@ -25,7 +25,8 @@ class NeighbourhoodGraph:
         bits: int = DEFAULT_BITS,
         permutations: int = DEFAULT_PERMUTATIONS,
         band: int = DEFAULT_BAND,
-        min_similarity: float = DEFAULT_MIN_SIMILARITY,
+        eps: float = DEFAULT_EPS,
+        width: Optional[float] = None,
         seed: int = 42,
         workers: int = 4,
     ) -> None:
@@ -33,12 +34,14 @@ class NeighbourhoodGraph:
             raise ValueError(f"bits must be between 1 and 62, got {bits}")
         if band < 1 or permutations < 1:
             raise ValueError("band and permutations must both be at least 1")
-        if not -1.0 <= min_similarity <= 1.0:
-            raise ValueError(f"min_similarity is a cosine, got {min_similarity}")
+        if eps <= 0:
+            raise ValueError(f"eps is a distance, got {eps}")
         self.bits = bits
         self.permutations = permutations
         self.band = band
-        self.min_similarity = min_similarity
+        self.eps = eps
+    
+        self.width = float(width if width is not None else eps)
         self._held: list = []
         self.seed = seed
         self.workers = workers
@@ -48,17 +51,19 @@ class NeighbourhoodGraph:
     # ------------------------------------------------------------------ pieces
 
     def _signatures(self, df, features: Sequence[str]):
-        """One bit per hyperplane, as an array so a permutation is a reindex."""
+        """One bucket per projection, as an array so a permutation is a reindex."""
         rng = np.random.default_rng(self.seed)
         planes = rng.normal(size=(self.bits, len(features)))
+        shifts = rng.uniform(0.0, self.width, size=self.bits)
 
         bits = []
-        for h in planes:
+        for h, b in zip(planes, shifts):
             terms = [F.col(c) * F.lit(float(w)) for c, w in zip(features, h)]
             projection = terms[0]
             for t in terms[1:]:
                 projection = projection + t
-            bits.append(F.when(projection >= 0, F.lit(1)).otherwise(F.lit(0)))
+            bits.append(F.floor((projection + F.lit(float(b)))
+                                / F.lit(self.width)).cast("long"))
 
         norm = F.sqrt(F.aggregate(
             F.array(*[F.col(c) for c in features]), F.lit(0.0),
@@ -128,8 +133,8 @@ class NeighbourhoodGraph:
         self._release()
         return out
 
-    def _similarities(self, candidates, signed):
-        """The exact cosine of every candidate pair, filtered at the threshold."""
+    def _distances(self, candidates, signed):
+        """The exact euclidean distance of every candidate pair, cut at eps."""
 
         left = signed.select(F.col(ID).alias("_src"),
                              F.col("_vec").alias("_va"), F.col("_norm").alias("_na"))
@@ -138,11 +143,12 @@ class NeighbourhoodGraph:
         dot = F.aggregate(F.zip_with("_va", "_vb", lambda x, y: x * y),
                           F.lit(0.0), lambda acc, x: acc + x)
         return (candidates.join(left, "_src").join(right, "_dst")
-                .withColumn("similarity",
-                            F.when((F.col("_na") == 0) | (F.col("_nb") == 0), F.lit(0.0))
-                             .otherwise(dot / (F.col("_na") * F.col("_nb"))))
-                .filter(F.col("similarity") >= F.lit(self.min_similarity))
-                .select("_src", "_dst", "similarity"))
+                .withColumn("distance",
+                            F.sqrt(F.greatest(
+                                F.col("_na") * F.col("_na") + F.col("_nb") * F.col("_nb")
+                                - F.lit(2.0) * dot, F.lit(0.0))))
+                .filter(F.col("distance") <= F.lit(self.eps))
+                .select("_src", "_dst", "distance"))
 
 
     # ------------------------------------------------------------------- build
@@ -150,4 +156,4 @@ class NeighbourhoodGraph:
 
 
 __all__ = ["NeighbourhoodGraph", "DEFAULT_BITS", "DEFAULT_PERMUTATIONS",
-           "DEFAULT_BAND", "DEFAULT_MIN_SIMILARITY"]
+           "DEFAULT_BAND", "DEFAULT_EPS"]

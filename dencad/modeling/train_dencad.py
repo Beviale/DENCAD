@@ -162,19 +162,11 @@ def _score(model, egos, cfg) -> np.ndarray:
     return out
 
 
-def _unit_columns(df, features, keep):
-    """'df' reduced to 'keep' plus its features divided by the row's norm."""
-
-    norm = F.sqrt(sum((F.col(c) * F.col(c) for c in features), F.lit(0.0)))
-    safe = F.greatest(norm, F.lit(1e-12))
-    return df.select(*keep, *[(F.col(c) / safe).alias(c) for c in features])
-
-
 def _pool_frame(train, pool_nodes, features):
     """The eligible training objects, with their features, ready to be placed against."""
 
-    return _unit_columns(pool_nodes.join(train, pool_nodes[C.NODE] == train[ID]),
-                         features, [F.col(C.NODE).alias("_id")])
+    return (pool_nodes.join(train, pool_nodes[C.NODE] == train[ID])
+            .select(F.col(C.NODE).alias("_id"), *features))
 
 
 AUDIT_QUERIES = 64
@@ -182,50 +174,52 @@ AUDIT_QUERIES = 64
 
 def _audit_placement(queries, pool, placed, features, sample: int = AUDIT_QUERIES):
     chosen = queries.orderBy(F.rand(42)).limit(sample).alias("q")
-    dot = sum((F.col(f"q.`{c}`") * F.col(f"p.`{c}`") for c in features), F.lit(0.0))
+    gap = sum(((F.col(f"q.`{c}`") - F.col(f"p.`{c}`")) ** 2 for c in features),
+              F.lit(0.0))
     truth = (chosen.crossJoin(pool.alias("p"))
              .filter(F.col("q._ex") != F.col("p._id"))
              .groupBy(F.col("q._row").alias("_qrow"))
-             .agg(F.max(dot).alias("_true")))
+             .agg(F.sqrt(F.min(gap)).alias("_true")))
     checked = (truth.join(placed.alias("g"), F.col("_qrow") == F.col("g._row"))
-               .select("_qrow", "_true", F.col("g._sim").alias("_claimed")))
+               .select("_qrow", "_true", F.col("g._dist").alias("_claimed")))
     wrong = checked.filter(
-        F.abs(F.col("_true") - F.col("_claimed")) > F.lit(1e-5)).count()
+        F.abs(F.col("_true") - F.col("_claimed"))
+        > F.lit(1e-4) * F.greatest(F.col("_true"), F.lit(1.0))).count()
     if wrong:
         worst = checked.orderBy(
-            (F.col("_true") - F.col("_claimed")).desc()).first()
+            (F.col("_claimed") - F.col("_true")).desc()).first()
         raise RuntimeError(
-            f"{wrong} of {sample} audited queries were not placed on their most "
-            f"similar object: row {worst['_qrow']} claims {worst['_claimed']:.6f} "
+            f"{wrong} of {sample} audited queries were not placed on their closest "
+            f"object: row {worst['_qrow']} claims {worst['_claimed']:.6f} "
             f"where the pool offers {worst['_true']:.6f}")
 
 
 def _place(spark, win, pool, features, exclude_self: bool = False):
-    """Every window of 'win' on its most similar object in 'pool', without collecting."""
+    """Every window of 'win' on its closest object in 'pool', without collecting."""
 
-    queries = _unit_columns(
-        win, features,
-        [F.col(ID).alias("_row"),
-         (F.col(ID) if exclude_self else F.lit(-1)).cast("long").alias("_ex")])
+    queries = win.select(
+        F.col(ID).alias("_row"),
+        (F.col(ID) if exclude_self else F.lit(-1)).cast("long").alias("_ex"),
+        *features)
     placed = (nearest_grid_frames(spark, queries, pool, features)
               .withColumnRenamed("_id", "_core")
               .localCheckpoint(eager=True))
     _audit_placement(queries, pool, placed, features)
     stats = placed.agg(F.count(F.lit(1)).alias("n"),
-                       F.min("_sim").alias("lo"),
-                       F.avg("_sim").alias("mid")).collect()[0]
+                       F.max("_dist").alias("hi"),
+                       F.avg("_dist").alias("mid")).collect()[0]
     logger.info("placed {:,} queries over the eligible objects, blocked on both sides "
-                "| cosine with the chosen object: mean {:.4f}, min {:.4f}",
-                int(stats["n"]), float(stats["mid"]), float(stats["lo"]))
+                "| distance to the chosen object: mean {:.4f}, max {:.4f}",
+                int(stats["n"]), float(stats["mid"]), float(stats["hi"]))
     return placed
 
 
 def _score_frames(spark, win, placed, clustered, members, model, cfg, features,
-                  min_similarity) -> np.ndarray:
+                  eps) -> np.ndarray:
     """Score every window of one part on the task that owns the cluster it landed in."""
 
     d, conf = model.d, dict(cfg)
-    cap, min_sim = cfg["max_members"], float(min_similarity)
+    cap, cut = cfg["max_members"], float(eps)
     hops = int(cfg["layers"])     # with L convolutions the centre reads its L-hop ball
     b_state = spark.sparkContext.broadcast(
         {k: v.detach().numpy() for k, v in model.net.state_dict().items()})
@@ -234,7 +228,7 @@ def _score_frames(spark, win, placed, clustered, members, model, cfg, features,
                          StructField("_s", DoubleType(), True)])
 
     def work(qpd: pd.DataFrame, mpd: pd.DataFrame) -> pd.DataFrame:
-        rows, egos = egos_from_rows(mpd, qpd, min_sim, cap, max_hops=hops)
+        rows, egos = egos_from_rows(mpd, qpd, cut, cap, max_hops=hops)
         if not len(egos):
             return pd.DataFrame({"_row": [], "_s": []})
         local = GraphAutoEncoder(d, conf)
@@ -261,7 +255,7 @@ def _score_frames(spark, win, placed, clustered, members, model, cfg, features,
 def train_dencad(split_dir: Path | str,
                  reports_dir: Path | str = Path("reports"),
                  window_steps: Optional[int] = None,
-                 min_similarity: Optional[float] = None,
+                 eps: Optional[float] = None,
                  stage: str = "select",
                  selected: Optional[dict] = None,
                  **overrides) -> dict:
@@ -278,12 +272,13 @@ def train_dencad(split_dir: Path | str,
     dataset, files = W.discover(split_dir)
     cfg = {**DEFAULTS, **model_config("dencad", dataset),
            **{k: v for k, v in overrides.items() if v is not None}}
-    if min_similarity is None:
-        min_similarity = cfg.get("min_similarity")
-    if min_similarity is None or cfg.get("window_steps") is None:
+    if eps is None:
+        eps = cfg.get("eps")
+    if eps is None or cfg.get("window_steps") is None:
         raise ValueError(f"params.yaml has no entry for {dataset!r} under "
-                         "data.window_steps or dencad.grid.min_similarity")
-    min_similarity = float(min_similarity)
+                         "data.window_steps or data.eps")
+    eps = float(eps)
+    width = float(cfg.get("width_factor", 1.0)) * eps
     window_steps = int(window_steps or cfg["window_steps"])
     min_coverage = float(cfg["min_coverage"])
 
@@ -295,8 +290,8 @@ def train_dencad(split_dir: Path | str,
             "replica reads are written by Spark and a lone replica would still read "
             "one of them")
 
-    logger.info("dataset {} from {} | window {} readings | cosine >= {} | minPts {}",
-                dataset, split_dir, window_steps, min_similarity, cfg["min_pts"])
+    logger.info("dataset {} from {} | window {} readings | eps {} | minPts {}",
+                dataset, split_dir, window_steps, eps, cfg["min_pts"])
     logger.info("contextual subgraphs: {} members, {} hops, centre {} | "
                 "autoencoder {}x{} latent {}",
                 cfg["max_members"] or "whole cluster", cfg["layers"],
@@ -305,7 +300,7 @@ def train_dencad(split_dir: Path | str,
 
     spark = W.session(f"dencad-{dataset}", cfg["workers"])
     graph = NeighbourhoodGraph(cfg["bits"], cfg["permutations"], cfg["band"],
-                               min_similarity=-1.0, seed=cfg["seed"],
+                               eps=eps, width=width, seed=cfg["seed"],
                                workers=cfg["workers"])
     try:
         # ---------------------------------------------------------- windowing
@@ -339,8 +334,7 @@ def train_dencad(split_dir: Path | str,
         candidates = graph._candidates(signed)
         n_candidates = candidates.count()
        
-        e_df = (graph._similarities(candidates, signed)
-                .filter(F.col("similarity") >= F.lit(min_similarity))
+        e_df = (graph._distances(candidates, signed)
                 .localCheckpoint(eager=True))
         n_edges = e_df.count()
         signed.unpersist()
@@ -385,10 +379,10 @@ def train_dencad(split_dir: Path | str,
         S.write_shards(shard_dir, replicas, queries, members, features,
                        validation=vqueries,
                        meta={"dataset": dataset,
-                             "min_similarity": float(min_similarity)})
+                             "eps": float(eps)})
         state_dict, best_ap, best_epoch = fit_shards(
             shard_dir, cfg, len(features), replicas,
-            min_similarity=min_similarity, on_ap=on_ap)
+            eps=eps, on_ap=on_ap)
         model.net.load_state_dict(state_dict)
        
         shutil.rmtree(shard_dir, ignore_errors=True)
@@ -397,11 +391,11 @@ def train_dencad(split_dir: Path | str,
        
         scores = {"train": _score_frames(spark, win["train"], placed, clustered,
                                          members, model, cfg, features,
-                                         min_similarity)}
+                                         eps)}
         for part in parts[1:]:
             scores[part] = _score_frames(
                 spark, win[part], _place(spark, win[part], pool, features),
-                clustered, members, model, cfg, features, min_similarity)
+                clustered, members, model, cfg, features, eps)
     finally:
         spark.stop()
 
@@ -428,7 +422,7 @@ def train_dencad(split_dir: Path | str,
     report = save_report(
         reports_dir / f"dencad_{split_dir.name}_{window_steps}steps_{stage}.json",
         "DENCAD", dataset, results, carried,
-        {"window_steps": int(window_steps), "min_similarity": float(min_similarity), **{k: cfg[k] for k in ("bits", "permutations", "band", "min_pts", "label_change_rate", "attach_to", "max_members", "mask_centre", "hidden", "latent", "layers", "learning_rate", "batch_size", "patience", "replicas", "seed")}},
+        {"window_steps": int(window_steps), "eps": float(eps), "width": float(width), **{k: cfg[k] for k in ("bits", "permutations", "band", "min_pts", "label_change_rate", "attach_to", "max_members", "mask_centre", "hidden", "latent", "layers", "learning_rate", "batch_size", "patience", "replicas", "seed")}},
         {"stage": stage, "epoch": int(best_epoch), "train_loss": train_loss,
          "windows": {p: int(len(labels[p])) for p in parts},
          "graph": {"edges": int(n_edges), "clusters": summary.get("clusters")}},
@@ -455,7 +449,7 @@ def main() -> None:
     ap.add_argument("--window-steps", type=int, default=None,
                     help="readings per window; the interval is that many sampling "
                          "periods, measured from the data")
-    ap.add_argument("--min-similarity", type=float, default=None,
+    ap.add_argument("--eps", type=float, default=None,
                     help="overrides the per-dataset value in params.yaml")
     ap.add_argument("--min-pts", type=int, default=None)
     ap.add_argument("--max-members", type=int, default=None,
@@ -479,7 +473,7 @@ def main() -> None:
                     help="keep the positives of validation in the final refit")
     ap.add_argument("--workers", type=int, default=None)
     a = ap.parse_args()
-    train_dencad(a.split_dir, a.reports_dir, a.window_steps, a.min_similarity,
+    train_dencad(a.split_dir, a.reports_dir, a.window_steps, a.eps,
                   min_pts=a.min_pts, max_members=a.max_members,
                   mask_centre=a.mask_centre, latent=a.latent, layers=a.layers,
                   train_examples=a.train_examples, workers=a.workers,

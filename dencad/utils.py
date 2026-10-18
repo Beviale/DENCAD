@@ -87,7 +87,7 @@ def model_config(model: str, dataset: str | None = None) -> dict:
     """A model's settings: the shared data block, the head of every grid axis as
     its default, then the model's own keys on top."""
     cfg = dict(section("data"))
-    cfg.pop("min_similarity", None)           # an axis, not a setting
+    cfg.pop("eps", None)                      # an axis, resolved from the grid
     cfg.update({k: v[0] for k, v in grid_axes(model, dataset).items() if v})
     cfg.update({k: v for k, v in section(model).items() if k != "grid"})
     if dataset is not None:

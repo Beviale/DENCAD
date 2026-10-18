@@ -38,7 +38,7 @@ def _read_shard(rank: int, source: dict, cfg: dict) -> dict:
     """The replica's own parquet partition, as subgraphs it builds itself."""
 
     got = read_shard(Path(source["dir"]), rank,
-                     min_similarity=float(source["min_similarity"]),
+                     eps=float(source["eps"]),
                      max_members=source["max_members"],
                      seed=int(cfg["seed"]), max_hops=int(cfg["layers"]))
     got["on_ap"] = bool(source["on_ap"])
@@ -161,7 +161,7 @@ def _worker(rank: int, world_size: int, source: dict, out: str, cfg: dict,
 
 
 def fit_shards(shards_dir, cfg: dict, d: int, world_size: int,
-               min_similarity: float, on_ap: bool,
+               eps: float, on_ap: bool,
                out: Optional[Path] = None) -> tuple[dict, float, int]:
     """Fit the replicas from parquet shards. Returns the weights, the score and the
     epoch they came from."""
@@ -169,7 +169,7 @@ def fit_shards(shards_dir, cfg: dict, d: int, world_size: int,
     shards_dir = Path(shards_dir)
     out = Path(out) if out else shards_dir / "fitted.pt"
     source = {"kind": "parquet", "dir": str(shards_dir),
-              "min_similarity": float(min_similarity),
+              "eps": float(eps),
               "max_members": cfg["max_members"], "on_ap": bool(on_ap)}
 
     with socket.socket() as probe:

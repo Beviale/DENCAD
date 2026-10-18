@@ -3,10 +3,10 @@ data:
     swat: 60                         # 1 s per reading
     hai: 30                          # 1 s per reading
     esa: 33                          # 18 s per reading
-  min_similarity: &min_similarity 
-    swat: [0.9858, 0.9910]
-    hai: [0.7367, 0.8741]
-    esa: [0.95, 0.90]             
+  eps: &eps
+    swat: [1.05, 1.20]
+    hai: [5.80, 6.10]
+    esa: [1.00, 2.00]                # MEASURE FIRST: placeholder, not measured
   scale_windows: true
   seed: 42
   workers: 4
@@ -31,7 +31,8 @@ sigma:
     bits: [16, 24]
     permutations: [10, 20]
     band: [20, 50]
-    min_similarity: *min_similarity
+    eps: *eps
+    width_factor: [1.0, 2.0]         # bucket width of the p-stable hash, in units of eps
     min_pts: [10, 5]                
     label_change_rate: [0.05]       
 
@@ -62,7 +63,8 @@ dencad:
     bits: [16, 24]
     permutations: [10, 20]
     band: [20, 50]
-    min_similarity: *min_similarity
+    eps: *eps
+    width_factor: [1.0, 2.0]         # bucket width of the p-stable hash, in units of eps
     min_pts: [10, 5]
     label_change_rate: [0.05]
     hidden: [64, 128]

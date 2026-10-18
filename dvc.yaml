@@ -236,7 +236,6 @@ stages:
     params:
       - data
       - sigma
-      - k_sigma
     outs:
       - reports/search_sigma_swat.json:
           cache: false
@@ -263,7 +262,6 @@ stages:
     params:
       - data
       - sigma
-      - k_sigma
     outs:
       - reports/sigma_swat_60steps_final.json:
           cache: false
@@ -398,7 +396,6 @@ stages:
     params:
       - data
       - sigma
-      - k_sigma
     outs:
       - reports/search_sigma_hai.json:
           cache: false
@@ -425,7 +422,6 @@ stages:
     params:
       - data
       - sigma
-      - k_sigma
     outs:
       - reports/sigma_hai_30steps_final.json:
           cache: false
@@ -560,7 +556,6 @@ stages:
     params:
       - data
       - sigma
-      - k_sigma
     outs:
       - reports/search_sigma_esa_rare_anomalies.json:
           cache: false
@@ -587,7 +582,6 @@ stages:
     params:
       - data
       - sigma
-      - k_sigma
     outs:
       - reports/sigma_esa_rare_anomalies_33steps_final.json:
           cache: false
@@ -722,7 +716,6 @@ stages:
     params:
       - data
       - sigma
-      - k_sigma
     outs:
       - reports/search_sigma_esa_contaminated.json:
           cache: false
@@ -749,7 +742,6 @@ stages:
     params:
       - data
       - sigma
-      - k_sigma
     outs:
       - reports/sigma_esa_contaminated_33steps_final.json:
           cache: false

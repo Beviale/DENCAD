@@ -14,26 +14,23 @@ from pyspark.sql import functions as F
 BUDGET_BYTES = 256 * 1024 * 1024
 
 
-def _unit(a: np.ndarray) -> np.ndarray:
-    a = np.asarray(a, dtype="float32")
-    return a / np.maximum(np.linalg.norm(a, axis=1), 1e-12)[:, None]
-
-
 def nearest(queries: np.ndarray, pool: np.ndarray, pool_ids: np.ndarray,
             exclude: Optional[np.ndarray] = None,
             budget_bytes: int = BUDGET_BYTES) -> tuple[np.ndarray, np.ndarray]:
-    """For each query, the most similar object in 'pool', and that cosine."""
+    """For each query, the closest object in 'pool', and that euclidean distance."""
 
-    qu = _unit(queries)
-    pu = _unit(pool)
+    qu = np.asarray(queries, dtype="float32")
+    pu = np.asarray(pool, dtype="float32")
     if len(pool_ids) != len(pu):
         raise ValueError("pool_ids and pool disagree in length")
     if not len(pu):
         raise ValueError("the pool is empty: nothing to place against")
 
+    psq = (pu ** 2).sum(1)
+    qsq = (qu ** 2).sum(1)
     tile = max(1, budget_bytes // (4 * len(pu)))
     best = np.empty(len(qu), dtype="int64")
-    score = np.empty(len(qu), dtype="float32")
+    score = np.empty(len(qu), dtype="float64")
     if exclude is not None:
         exclude = np.asarray(exclude, dtype="int64")
         at = np.searchsorted(pool_ids, exclude)
@@ -42,20 +39,24 @@ def nearest(queries: np.ndarray, pool: np.ndarray, pool_ids: np.ndarray,
 
     for start in range(0, len(qu), tile):
         stop = min(start + tile, len(qu))
-        block = qu[start:stop] @ pu.T
+        block = qsq[start:stop, None] + psq[None, :] - 2.0 * (qu[start:stop] @ pu.T)
+        np.maximum(block, 0, out=block)
+        np.sqrt(block, out=block)
         if exclude is not None:
             rows = np.flatnonzero(inside[start:stop])
             if len(rows):
-                block[rows, at[start:stop][rows]] = -np.inf
-        idx = block.argmax(1)
+                block[rows, at[start:stop][rows]] = np.inf
+        idx = block.argmin(1)
         best[start:stop] = pool_ids[idx]
-        score[start:stop] = block[np.arange(stop - start), idx]
+  
+        gap = (qu[start:stop] - pu[idx]).astype("float64")
+        score[start:stop] = np.sqrt((gap ** 2).sum(1))
 
     logger.info("placed {:,} queries against {:,} eligible objects exactly, {:,} per "
-                "tile | cosine with the chosen object: median {:.4f}, min {:.4f}",
+                "tile | distance to the chosen object: median {:.4f}, max {:.4f}",
                 len(qu), len(pu), min(tile, len(qu)), float(np.median(score)),
-                float(score.min()))
-    return best, score.astype("float64")
+                float(score.max()))
+    return best, score
 
 
 def nearest_grid_frames(spark, queries, pool, cols: Sequence[str],
@@ -75,12 +76,12 @@ def nearest_grid_frames(spark, queries, pool, cols: Sequence[str],
 
     schema = StructType([StructField("_row", LongType(), False),
                          StructField("_id", LongType(), True),
-                         StructField("_sim", DoubleType(), True)])
+                         StructField("_dist", DoubleType(), True)])
     columns = list(cols)
 
     def partial(qpd, ppd):
         if qpd.empty or ppd.empty:
-            return pd.DataFrame({"_row": [], "_id": [], "_sim": []})
+            return pd.DataFrame({"_row": [], "_id": [], "_dist": []})
         ids = ppd["_id"].to_numpy()
         order = np.argsort(ids)
         ids = ids[order]
@@ -88,17 +89,18 @@ def nearest_grid_frames(spark, queries, pool, cols: Sequence[str],
         Q = qpd[columns].to_numpy("float32")
         ex = qpd["_ex"].to_numpy()
         ex = None if (ex < 0).all() else ex
-        best, sim = nearest(Q, P, ids, exclude=ex)
-        return pd.DataFrame({"_row": qpd["_row"].to_numpy(), "_id": best, "_sim": sim})
+        best, dist = nearest(Q, P, ids, exclude=ex)
+        return pd.DataFrame({"_row": qpd["_row"].to_numpy(), "_id": best,
+                             "_dist": dist})
 
     partials = (qdf.groupBy("_qb", "_pb")
                 .cogroup(pdf.groupBy("_qb", "_pb"))
                 .applyInPandas(partial, schema=schema))
 
     return (partials.groupBy("_row")
-            .agg(F.max(F.struct(F.col("_sim").alias("s"),
+            .agg(F.min(F.struct(F.col("_dist").alias("d"),
                                 F.col("_id").alias("i"))).alias("_b"))
-            .select("_row", F.col("_b.i").alias("_id"), F.col("_b.s").alias("_sim")))
+            .select("_row", F.col("_b.i").alias("_id"), F.col("_b.d").alias("_dist")))
 
 
 __all__ = ["BUDGET_BYTES", "nearest", "nearest_grid_frames"]

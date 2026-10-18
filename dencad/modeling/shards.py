@@ -147,7 +147,7 @@ def write_shards(out_dir: Path, world_size: int, queries, members,
     return out_dir
 
 
-def read_shard(out_dir: Path, rank: int, min_similarity: float,
+def read_shard(out_dir: Path, rank: int, eps: float,
                max_members: Optional[int], seed: int,
                max_hops: Optional[int] = None) -> dict:
     """A replica's own partition, as subgraphs: its queries and its validation.
@@ -175,7 +175,7 @@ def read_shard(out_dir: Path, rank: int, min_similarity: float,
         rows, egos = [], []
         for cluster, group in frame.groupby("_cluster"):
             got_rows, got_egos = egos_from_rows(
-                by_cluster[int(cluster)], group, min_similarity, max_members,
+                by_cluster[int(cluster)], group, eps, max_members,
                 max_hops=max_hops)
             rows.append(got_rows)
             egos.extend(got_egos)

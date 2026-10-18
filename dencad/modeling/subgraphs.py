@@ -1,7 +1,7 @@
 """Contextual subgraphs: the subgraph an object is scored inside.
 
 An object is placed in the graph the way DENCAST places an unlabelled one -- it takes
-the **most similar core object**, by exact cosine and with no threshold, and inherits
+the **closest core object**, by exact euclidean distance and with no cut, and inherits
 that core's cluster. The subgraph is that cluster, with the object attached to the core
 it chose and to any other member of the cluster it is similar enough to.
 """
@@ -29,20 +29,19 @@ class ContextualSubgraphBuilder:
     """Cuts the context out of a clustered graph: one cluster, plus the query."""
 
     def __init__(self, features: np.ndarray, cluster_of: np.ndarray,
-                 edges: np.ndarray, min_similarity: float = 0.99,
+                 edges: np.ndarray, eps: float = 1.0,
                  max_members: Optional[int] = None,
                  max_hops: Optional[int] = None):
         if len(features) != len(cluster_of):
             raise ValueError("features and cluster_of disagree in length")
         self.X = np.asarray(features, dtype="float32")
         self.cluster_of = np.asarray(cluster_of, dtype="int64")
-        self.min_similarity = min_similarity
+        self.eps = eps
         self.max_members = max_members
         # Keep only the nodes that can reach the centre in this many hops.
         self.max_hops = max_hops
 
-        norms = np.linalg.norm(self.X, axis=1)
-        self.unit = self.X / np.maximum(norms, 1e-12)[:, None]
+        self.sq = (self.X ** 2).sum(1)
 
         self.members: dict[int, np.ndarray] = {}
         for c in np.unique(self.cluster_of):
@@ -61,6 +60,12 @@ class ContextualSubgraphBuilder:
 
     # ------------------------------------------------------------------ placing
 
+    def _to(self, idx: np.ndarray, vector: np.ndarray) -> np.ndarray:
+        """Euclidean distance from 'vector' to the members in 'idx'."""
+        v = vector.astype("float32")
+        d = self.sq[idx] + float(v @ v) - 2.0 * (self.X[idx] @ v)
+        return np.sqrt(np.maximum(d, 0.0))
+
     def build(self, vector: np.ndarray, core: int,
               drop: Optional[int] = None) -> ContextualSubgraph:
         """The contextual subgraph of one object attached to `core`."""
@@ -72,16 +77,13 @@ class ContextualSubgraphBuilder:
         if drop is not None and drop in idx:
             idx = idx[idx != drop]
         if self.max_members is not None and len(idx) > self.max_members:
-            unit = vector / max(np.linalg.norm(vector), 1e-12)
-            order = np.argsort(-(self.unit[idx] @ unit.astype("float32")))
+            order = np.argsort(self._to(idx, vector))
             idx = np.sort(idx[order[:self.max_members]])
 
         m = len(idx)
         position = {int(v): i for i, v in enumerate(idx)}
-        unit = vector / max(np.linalg.norm(vector), 1e-12)
-        sims = self.unit[idx] @ unit.astype("float32")
-        attach = sims >= self.min_similarity
-        attach |= idx == core                     # the chosen core, whatever its cosine
+        attach = self._to(idx, vector) <= self.eps
+        attach |= idx == core                     # the chosen core, however far
 
         pairs = []
         if cluster != 0 and m > 1:
@@ -136,7 +138,7 @@ class ContextualSubgraphBuilder:
 
     # ----------------------------------------------------------------- datasets
 
-def egos_from_rows(members, queries, min_similarity: float,
+def egos_from_rows(members, queries, eps: float,
                    max_members: Optional[int] = None,
                    max_hops: Optional[int] = None):
     rows = np.asarray(queries["_row"].to_numpy(), dtype="int64")
@@ -155,7 +157,7 @@ def egos_from_rows(members, queries, min_similarity: float,
              else np.zeros((0, 2), dtype="int64"))
 
     mini = ContextualSubgraphBuilder(
-        X, np.ones(len(X), dtype="int64"), edges, min_similarity=min_similarity,
+        X, np.ones(len(X), dtype="int64"), edges, eps=eps,
         max_members=max_members, max_hops=max_hops)
 
     drops = (queries["_drop"].to_numpy() if "_drop" in queries

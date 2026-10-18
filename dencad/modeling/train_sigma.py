@@ -1,4 +1,4 @@
-"""Sigma rule on DENCAST's placement cosine: the baseline with no autoencoder."""
+"""Sigma rule on DENCAST's placement distance: the baseline with no autoencoder."""
 
 from __future__ import annotations
 
@@ -16,15 +16,15 @@ from dencad.modeling import windowing as W
 from dencad.modeling.evaluate import metrics, save_report
 from dencad.modeling.lsh import ID, NeighbourhoodGraph
 from dencad.modeling.train_dencad import DEFAULTS, _place, _pool_frame
-from dencad.utils import declared_categorical, k_sigma, model_config
+from dencad.utils import declared_categorical, model_config
 
 PARTS = ("train", "validation", "test")
 EPS = 1e-6
 
 
 def _scores(placed, mu: float, sd: float, n: int) -> np.ndarray:
-    """z per window, ordered by row id."""
-    got = (placed.select("_row", ((F.lit(mu) - F.col("_sim"))
+    """z per window, ordered by row id. Far from the graph is high."""
+    got = (placed.select("_row", ((F.col("_dist") - F.lit(mu))
                                   / F.lit(max(sd, EPS))).alias("_z"))
            .orderBy("_row").toPandas())
     out = np.full(n, np.nan)
@@ -37,7 +37,7 @@ def _scores(placed, mu: float, sd: float, n: int) -> np.ndarray:
 
 def train_sigma(split_dir: Path | str, reports_dir: Path | str = Path("reports"),
                 window_steps: Optional[int] = None,
-                min_similarity: Optional[float] = None,
+                eps: Optional[float] = None,
                 stage: str = "select", selected: Optional[dict] = None,
                 **overrides) -> dict:
     """One phase of the protocol. "select" never reads the test split."""
@@ -52,20 +52,21 @@ def train_sigma(split_dir: Path | str, reports_dir: Path | str = Path("reports")
     dataset, files = W.discover(split_dir)
     cfg = {**DEFAULTS, **model_config("sigma", dataset),
            **{k: v for k, v in overrides.items() if v is not None}}
-    if min_similarity is None:
-        min_similarity = cfg.get("min_similarity")
-    if min_similarity is None or cfg.get("window_steps") is None:
+    if eps is None:
+        eps = cfg.get("eps")
+    if eps is None or cfg.get("window_steps") is None:
         raise ValueError(f"params.yaml has no entry for {dataset!r} under "
-                         "data.window_steps or sigma.grid.min_similarity")
-    min_similarity = float(min_similarity)
+                         "data.window_steps or data.eps")
+    eps = float(eps)
+    width = float(cfg.get("width_factor", 1.0)) * eps
     window_steps = int(window_steps or cfg["window_steps"])
     min_coverage = float(cfg["min_coverage"])
 
-    logger.info("sigma on {} from {} | window {} readings | cosine >= {} | minPts {}",
-                dataset, split_dir, window_steps, min_similarity, cfg["min_pts"])
+    logger.info("sigma on {} from {} | window {} readings | eps {} | minPts {}",
+                dataset, split_dir, window_steps, eps, cfg["min_pts"])
     spark = W.session(f"sigma-{dataset}", int(cfg["workers"]))
     graph = NeighbourhoodGraph(int(cfg["bits"]), int(cfg["permutations"]),
-                               int(cfg["band"]), min_similarity=-1.0,
+                               int(cfg["band"]), eps=eps, width=width,
                                seed=int(cfg["seed"]), workers=int(cfg["workers"]))
     try:
         parts = PARTS if stage == "final" else ("train", "validation")
@@ -90,8 +91,7 @@ def train_sigma(split_dir: Path | str, reports_dir: Path | str = Path("reports")
             ID, "_sig", "_vec", "_norm").cache()
         candidates = graph._candidates(signed)
         n_candidates = candidates.count()
-        e_df = (graph._similarities(candidates, signed)
-                .filter(F.col("similarity") >= F.lit(min_similarity))
+        e_df = (graph._distances(candidates, signed)
                 .localCheckpoint(eager=True))
         n_edges = e_df.count()
         signed.unpersist()
@@ -111,39 +111,29 @@ def train_sigma(split_dir: Path | str, reports_dir: Path | str = Path("reports")
         pool = _pool_frame(win["train"], pool_nodes,
                            features).localCheckpoint(eager=True)
 
-        placed = {p: _place(spark, win[p], pool, features, exclude_self=(p == "train"))
-                  for p in parts}
-
-        spread = placed["train"].agg(F.avg("_sim"),
-                                      F.stddev_pop("_sim")).collect()[0]
-        mu, sd = float(spread[0]), float(spread[1] or 0.0)
-        logger.info("training cosine: mean {:.4f}, deviation {:.4f}", mu, sd)
-
-   
         scored_parts = [p for p in parts if p != "train"]
+        placed = {p: _place(spark, win[p], pool, features) for p in scored_parts}
+
+        normals = placed["validation"].join(
+            win["validation"].filter(F.col(label) == 0),
+            placed["validation"]["_row"] == win["validation"][ID])
+        spread = normals.agg(F.avg("_dist"), F.stddev_pop("_dist")).collect()[0]
+        mu, sd = float(spread[0]), float(spread[1] or 0.0)
+        logger.info("placement distance of the normal validation windows: "
+                    "mean {:.4f}, deviation {:.4f}", mu, sd)
+
         scores = {p: _scores(placed[p], mu, sd, len(labels[p])) for p in scored_parts}
     finally:
         spark.stop()
-
-    k_values = k_sigma()
-
-    by_k = {k: {p: metrics(labels[p], scores[p], threshold=k) for p in scored_parts}
-            for k in k_values}
-    for k in k_values:
-        v = by_k[k]["validation"]
-        logger.info("  k = {:<4} precision {:.4f}  recall {:.4f}  F1 {:.4f}  "
-                    "flagged {:.2%}", k, v["precision"], v["recall"], v["f1"],
-                    v["flagged_share"])
 
     if stage == "final":
         carried = float(selected["threshold"])
         logger.info("threshold carried from the selection: k = {:.3f} sigma", carried)
     else:
-        carried = max(k_values, key=lambda k: by_k[k]["validation"]["f1"])
-        fine = metrics(labels["validation"], scores["validation"])
-        logger.info("k = {:.3f} sigma chosen on validation (F1 {:.4f}); a free search "
-                    "over 400 quantiles would reach {:.4f} at {:.3f}", carried,
-                    by_k[carried]["validation"]["f1"], fine["f1"], fine["threshold"])
+        carried = float(metrics(labels["validation"],
+                                scores["validation"])["threshold"])
+        logger.info("threshold chosen on validation: k = {:.3f} sigma, distance "
+                    "{:.4f}", carried, mu + carried * sd)
 
     results = {}
     for part in scored_parts:
@@ -157,9 +147,10 @@ def train_sigma(split_dir: Path | str, reports_dir: Path | str = Path("reports")
     report = save_report(
         reports_dir / f"sigma_{split_dir.name}_{window_steps}steps_{stage}.json",
         "DENCAST + sigma", dataset, results, carried,
-        {"window_steps": int(window_steps), "min_similarity": float(min_similarity), **{k: cfg[k] for k in ("bits", "permutations", "band", "min_pts", "label_change_rate", "attach_to", "seed")}},
+        {"window_steps": int(window_steps), "eps": float(eps), "width": float(width), **{k: cfg[k] for k in ("bits", "permutations", "band", "min_pts", "label_change_rate", "attach_to", "seed")}},
         {"stage": stage, "k_sigma": float(carried),
-         "training_cosine": {"mean": mu, "deviation": sd},
+         "cut_distance": mu + carried * sd,
+         "validation_distance": {"mean": mu, "deviation": sd},
          "windows": {p: int(len(labels[p])) for p in parts},
          "graph": {"edges": int(n_edges), "clusters": summary.get("clusters")}},
         write=(stage == "final"))
@@ -178,11 +169,11 @@ def _carry(path):
 
 def main() -> None:
     ap = argparse.ArgumentParser(
-        description="Sigma rule on DENCAST's placement cosine.")
+        description="Sigma rule on DENCAST's placement distance.")
     ap.add_argument("--split_dir", type=Path, required=True)
     ap.add_argument("--reports-dir", type=Path, default=Path("reports"))
     ap.add_argument("--window-steps", type=int, default=None)
-    ap.add_argument("--min-similarity", type=float, default=None)
+    ap.add_argument("--eps", type=float, default=None)
     ap.add_argument("--min-pts", type=int, default=None)
     ap.add_argument("--stage", choices=("select", "final"), default="select")
     ap.add_argument("--selected", type=Path, default=None)
@@ -190,7 +181,7 @@ def main() -> None:
                     help="keep the positives of validation in the final refit")
     ap.add_argument("--workers", type=int, default=None)
     a = ap.parse_args()
-    train_sigma(a.split_dir, a.reports_dir, a.window_steps, a.min_similarity,
+    train_sigma(a.split_dir, a.reports_dir, a.window_steps, a.eps,
                 stage=a.stage, min_pts=a.min_pts, workers=a.workers,
                 contaminated_refit=a.contaminated_refit,
                 selected=(_carry(a.selected)
