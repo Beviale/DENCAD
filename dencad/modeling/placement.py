@@ -101,5 +101,4 @@ def nearest_grid_frames(spark, queries, pool, cols: Sequence[str],
             .select("_row", F.col("_b.i").alias("_id"), F.col("_b.s").alias("_sim")))
 
 
-__all__ = ["BUDGET_BYTES", "nearest", "nearest_grid",
-           "nearest_grid_frames"]
+__all__ = ["BUDGET_BYTES", "nearest", "nearest_grid_frames"]

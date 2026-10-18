@@ -3,10 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from loguru import logger
-import numpy as np
 import pandas as pd
 
-from dencad.data.split.split import Splitter, PARTS
+from dencad.data.split.split import Splitter
 
 LEAD_IN_END = "2000-02-28 06:22:30"
 VALID_START = "2001-10-01"

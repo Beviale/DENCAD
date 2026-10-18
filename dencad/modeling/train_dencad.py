@@ -6,10 +6,8 @@ import json
 import shutil
 import tempfile
 import argparse
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
-import json
 
 from loguru import logger
 import numpy as np
@@ -145,7 +143,7 @@ def batches(egos, indices, d: int, size: int, mask_centre: bool) -> list:
         tA = torch.from_numpy(A)
         tmask = torch.from_numpy(mask)
         tdeg = None if D is None else torch.from_numpy(D)
-        out.append((torch.from_numpy(X), _normalise(tA, tmask, tdeg), tmask,
+        out.append((torch.from_numpy(X), _normalise(tA, tmask, tdeg),
                     torch.from_numpy(centre), torch.from_numpy(target), chunk))
     return out
 
@@ -157,7 +155,7 @@ def _score(model, egos, cfg) -> np.ndarray:
     present = [i for i, e in enumerate(egos) if e is not None]
     model.net.eval()
     with torch.no_grad():
-        for X, A_hat, mask, centre, target, chunk in batches(
+        for X, A_hat, centre, target, chunk in batches(
                 egos, present, model.d, cfg["batch_size"], cfg["mask_centre"]):
             err = ((model.forward(X, A_hat, centre) - target) ** 2).mean(1)
             out[chunk] = err.numpy()
@@ -313,7 +311,7 @@ def train_dencad(split_dir: Path | str,
         # ---------------------------------------------------------- windowing
         declared = declared_categorical(dataset)
         parts = PARTS if stage == "final" else ("train", "validation")
-        win, labels, features, label, scaling, period = W.windowed_parts(
+        win, labels, features, label = W.windowed_parts(
             spark, files, parts, window_steps, declared,
             min_coverage=min_coverage, scale=cfg["scale_windows"])
 
@@ -346,11 +344,10 @@ def train_dencad(split_dir: Path | str,
                 .localCheckpoint(eager=True))
         n_edges = e_df.count()
         signed.unpersist()
-        logger.info("graph: {:,} edges of {:,} candidates", n_edges, n_candidates)
-
         vertices = win["train"].select(F.col(ID).alias(C.NODE))
         cores_df = C.core_objects(e_df, cfg["min_pts"]).localCheckpoint(eager=True)
-        n_cores = cores_df.count()
+        logger.info("graph: {:,} edges of {:,} candidates, {:,} core objects",
+                    n_edges, n_candidates, cores_df.count())
         state = (C.find_clusters(vertices, e_df, cores_df,
                                  cfg["label_change_rate"]).localCheckpoint(eager=True))
         summary = C.summarise(state, dataset)

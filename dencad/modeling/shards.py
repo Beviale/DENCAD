@@ -54,8 +54,7 @@ def query_frame(placed, state, win, cols: Sequence[str], node: str = "_id",
     cores = state.select(F.col("_node").alias("_core"), "_cluster")
     return (placed.join(cores, "_core")
             .join(win, placed["_row"] == win[node])
-            .select("_cluster", "_row", "_core", "_sim",
-                    F.array(*cols).alias("_f"),
+            .select("_cluster", "_row", "_core", F.array(*cols).alias("_f"),
                     *([F.col(label).cast("long").alias("_y")] if label else []),
                     *([F.col("_row").alias("_drop")] if leave_out else [])))
 

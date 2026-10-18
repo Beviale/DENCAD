@@ -69,7 +69,7 @@ def train_sigma(split_dir: Path | str, reports_dir: Path | str = Path("reports")
                                seed=int(cfg["seed"]), workers=int(cfg["workers"]))
     try:
         parts = PARTS if stage == "final" else ("train", "validation")
-        win, labels, features, label, scaling, period = W.windowed_parts(
+        win, labels, features, label = W.windowed_parts(
             spark, files, parts, window_steps, declared_categorical(dataset),
             min_coverage=min_coverage, scale=cfg["scale_windows"])
 
@@ -95,11 +95,10 @@ def train_sigma(split_dir: Path | str, reports_dir: Path | str = Path("reports")
                 .localCheckpoint(eager=True))
         n_edges = e_df.count()
         signed.unpersist()
-        logger.info("graph: {:,} edges of {:,} candidates", n_edges, n_candidates)
-
         vertices = win["train"].select(F.col(ID).alias(C.NODE))
         cores_df = C.core_objects(e_df, cfg["min_pts"]).localCheckpoint(eager=True)
-        n_cores = cores_df.count()
+        logger.info("graph: {:,} edges of {:,} candidates, {:,} core objects",
+                    n_edges, n_candidates, cores_df.count())
         state = (C.find_clusters(vertices, e_df, cores_df,
                                  cfg["label_change_rate"]).localCheckpoint(eager=True))
         summary = C.summarise(state, dataset)

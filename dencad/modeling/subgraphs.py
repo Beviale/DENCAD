@@ -22,9 +22,6 @@ class ContextualSubgraph:
     features: np.ndarray          # (m, d), the centre last
     adjacency: np.ndarray         # (m, m), symmetric, no self-loops
     centre: int                   # index of the centre, always m - 1
-    cluster: int                  # cluster it was attached to, 0 when noise
-    core: int                     # index in the training set of the core it chose
-    similarity: float             # cosine with that core
     degrees: Optional[np.ndarray] = None
 
 
@@ -64,7 +61,7 @@ class ContextualSubgraphBuilder:
 
     # ------------------------------------------------------------------ placing
 
-    def build(self, vector: np.ndarray, core: int, similarity: float,
+    def build(self, vector: np.ndarray, core: int,
               drop: Optional[int] = None) -> ContextualSubgraph:
         """The contextual subgraph of one object attached to `core`."""
         cluster = int(self.cluster_of[core])
@@ -133,8 +130,7 @@ class ContextualSubgraphBuilder:
         features = np.vstack([self.X[idx[keep]],
                               vector.astype("float32")[None, :]])
         return ContextualSubgraph(
-            features=features, adjacency=big, centre=k, cluster=cluster,
-            core=int(core), similarity=float(similarity),
+            features=features, adjacency=big, centre=k,
             degrees=(np.concatenate([degrees[keep], degrees[m:]])
                      if pruned else None))
 
@@ -164,10 +160,9 @@ def egos_from_rows(members, queries, min_similarity: float,
 
     drops = (queries["_drop"].to_numpy() if "_drop" in queries
              else np.full(len(rows), -1, dtype="int64"))
-    egos = [mini.build(np.asarray(f, dtype="float32"), where[int(c)], float(v),
+    egos = [mini.build(np.asarray(f, dtype="float32"), where[int(c)],
                        drop=(where.get(int(dp)) if int(dp) >= 0 else None))
-            for f, c, v, dp in zip(queries["_f"], queries["_core"], queries["_sim"],
-                                   drops)]
+            for f, c, dp in zip(queries["_f"], queries["_core"], drops)]
     return rows, egos
 
 

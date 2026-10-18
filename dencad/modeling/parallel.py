@@ -18,16 +18,15 @@ from dencad.modeling.evaluate import metrics
 from dencad.modeling.shards import read_shard
 
 
-def _score_local(replica, forward, egos, cfg, d) -> np.ndarray:
+def _score_local(forward, egos, cfg, d) -> np.ndarray:
     """Reconstruction error of each subgraph, with the replica's own weights."""
     from dencad.modeling.train_dencad import batches
-
 
     out = np.full(len(egos), np.nan)
     if not len(egos):
         return out
     with torch.no_grad():
-        for X, A_hat, mask, centre, target, chunk in batches(
+        for X, A_hat, centre, target, chunk in batches(
                 egos, list(range(len(egos))), d, cfg["batch_size"],
                 cfg["mask_centre"]):
             out[chunk] = ((forward(X, A_hat, centre) - target) ** 2
@@ -107,7 +106,7 @@ def _worker(rank: int, world_size: int, source: dict, out: str, cfg: dict,
             replica.train()
             shuffler.shuffle(order)
             for j in order[:steps]:
-                X, A_hat, mask, centre, target, _ = fitbatches[j]
+                X, A_hat, centre, target, _ = fitbatches[j]
                 opt.zero_grad()
                 ((forward(X, A_hat, centre) - target) ** 2).mean().backward()
                 opt.step()
@@ -133,7 +132,7 @@ def _worker(rank: int, world_size: int, source: dict, out: str, cfg: dict,
                 continue
 
             replica.eval()
-            mine_scores = _score_local(replica, forward, val_egos, cfg, d)
+            mine_scores = _score_local(forward, val_egos, cfg, d)
             pieces = [None] * world_size
             dist.all_gather_object(pieces, (mine_scores, shard["val_y"]))
             scores = np.concatenate([p[0] for p in pieces])

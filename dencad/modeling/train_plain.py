@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -13,7 +12,6 @@ import numpy as np
 import pandas as pd
 from pyspark.sql import functions as F
 import torch
-import json
 
 from dencad.modeling import windowing as W
 from dencad.modeling.evaluate import metrics, save_report
@@ -29,8 +27,7 @@ PARTS = ("train", "validation", "test")
 def _alone(x: np.ndarray) -> ContextualSubgraph:
     """One window as its own subgraph: no neighbours, so A_hat is the identity."""
     return ContextualSubgraph(features=np.asarray(x, dtype="float32")[None, :],
-                              adjacency=np.zeros((1, 1), dtype="float32"),
-                              centre=0, cluster=0, core=-1, similarity=1.0)
+                              adjacency=np.zeros((1, 1), dtype="float32"), centre=0)
 
 
 def _egos(win, features) -> tuple[np.ndarray, list]:
@@ -86,7 +83,7 @@ def _fit(model, egos, cfg, watch, fixed: Optional[int] = None) -> tuple[float, i
         model.net.train()
         shuffler.shuffle(order)
         for j in order:
-            X, A_hat, mask, centre, target, _ = fit_batches[j]
+            X, A_hat, centre, target, _ = fit_batches[j]
             opt.zero_grad()
             ((model.forward(X, A_hat, centre) - target) ** 2).mean().backward()
             opt.step()
@@ -133,7 +130,7 @@ def train_plain(split_dir: Path | str, reports_dir: Path | str = Path("reports")
     spark = W.session(f"plain-{dataset}", int(cfg["workers"]))
     try:
         parts = PARTS if stage == "final" else ("train", "validation")
-        win, labels, features, label, scaling, period = W.windowed_parts(
+        win, labels, features, label = W.windowed_parts(
             spark, files, parts, window_steps, declared_categorical(dataset),
             min_coverage=min_coverage, scale=cfg["scale_windows"])
 

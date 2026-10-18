@@ -13,14 +13,7 @@ from loguru import logger
 
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-from pyspark.sql.types import (
-    StructType,
-    StructField,
-    DoubleType,
-    LongType
-)
 from pyspark.ml.feature import VectorAssembler
-from pyspark.sql import functions as F
 from pyspark.sql import Window as SparkWindow
 
 
@@ -233,7 +226,7 @@ def windowed_parts(spark, files: dict, parts: Sequence[str],
         logger.info("  {:<11} {:>7,} windows, {:>6,} positive ({:.2%})",
                     part, len(labels[part]), int(labels[part].sum()),
                     labels[part].mean())
-    return win, labels, features, label, scaling, period
+    return win, labels, features, label
 
 
 def number_rows(df, order: str = INDEX, name: str = "_id"):
