@@ -491,7 +491,7 @@ stages:
       - data
       - dencad
     outs:
-      - reports/dencad_esa_rare_anomalies_33steps_final.json:
+      - reports/dencad_esa_rare_anomalies_132steps_final.json:
           cache: false
 
   search_plain_esa:
@@ -532,7 +532,7 @@ stages:
       - data
       - plain
     outs:
-      - reports/plain_esa_rare_anomalies_33steps_final.json:
+      - reports/plain_esa_rare_anomalies_132steps_final.json:
           cache: false
 
   search_sigma_esa:
@@ -583,7 +583,7 @@ stages:
       - data
       - sigma
     outs:
-      - reports/sigma_esa_rare_anomalies_33steps_final.json:
+      - reports/sigma_esa_rare_anomalies_132steps_final.json:
           cache: false
 
   kmeans_esa:
@@ -602,7 +602,7 @@ stages:
       - kmeans
       - k_sigma
     outs:
-      - reports/kmeans_esa_rare_anomalies_33steps_final.json:
+      - reports/kmeans_esa_rare_anomalies_132steps_final.json:
           cache: false
 
   search_dencad_esa_contaminated:
@@ -651,7 +651,7 @@ stages:
       - data
       - dencad
     outs:
-      - reports/dencad_esa_contaminated_33steps_final.json:
+      - reports/dencad_esa_contaminated_132steps_final.json:
           cache: false
 
   search_plain_esa_contaminated:
@@ -692,7 +692,7 @@ stages:
       - data
       - plain
     outs:
-      - reports/plain_esa_contaminated_33steps_final.json:
+      - reports/plain_esa_contaminated_132steps_final.json:
           cache: false
 
   search_sigma_esa_contaminated:
@@ -743,7 +743,7 @@ stages:
       - data
       - sigma
     outs:
-      - reports/sigma_esa_contaminated_33steps_final.json:
+      - reports/sigma_esa_contaminated_132steps_final.json:
           cache: false
 
   kmeans_esa_contaminated:
@@ -763,5 +763,5 @@ stages:
       - kmeans
       - k_sigma
     outs:
-      - reports/kmeans_esa_contaminated_33steps_final.json:
+      - reports/kmeans_esa_contaminated_132steps_final.json:
           cache: false

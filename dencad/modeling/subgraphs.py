@@ -42,6 +42,7 @@ class ContextualSubgraphBuilder:
         self.max_hops = max_hops
 
         self.sq = (self.X ** 2).sum(1)
+        self._pos = np.full(len(self.X), -1, dtype="int64")
 
         self.members: dict[int, np.ndarray] = {}
         for c in np.unique(self.cluster_of):
@@ -70,62 +71,59 @@ class ContextualSubgraphBuilder:
               drop: Optional[int] = None) -> ContextualSubgraph:
         """The contextual subgraph of one object attached to `core`."""
         cluster = int(self.cluster_of[core])
-        if cluster == 0:
-            idx = np.array([core])
-        else:
-            idx = self.members[cluster]
+        idx = np.array([core]) if cluster == 0 else self.members[cluster]
         if drop is not None and drop in idx:
             idx = idx[idx != drop]
+        gap = self._to(idx, vector)
         if self.max_members is not None and len(idx) > self.max_members:
-            order = np.argsort(self._to(idx, vector))
-            idx = np.sort(idx[order[:self.max_members]])
+            order = np.sort(np.argsort(gap)[:self.max_members])
+            idx, gap = idx[order], gap[order]
 
         m = len(idx)
-        position = {int(v): i for i, v in enumerate(idx)}
-        attach = self._to(idx, vector) <= self.eps
+        attach = gap <= self.eps
         attach |= idx == core                     # the chosen core, however far
 
-        pairs = []
-        if cluster != 0 and m > 1:
-            for u, v in self.cluster_edges[cluster]:
-                iu = position.get(int(u))
-                iv = position.get(int(v))
-                if iu is not None and iv is not None:
-                    pairs.append((iu, iv))
+        pos = self._pos
+        pos[idx] = np.arange(m)
+        edges = (self.cluster_edges[cluster] if cluster != 0 and m > 1
+                 else np.zeros((0, 2), dtype="int64"))
+        iu, iv = pos[edges[:, 0]], pos[edges[:, 1]]
+        inside = (iu >= 0) & (iv >= 0)
+        iu, iv = iu[inside], iv[inside]
+        pos[idx] = -1
 
         degrees = np.ones(m + 1, dtype="float32")
-        for iu, iv in pairs:
-            degrees[iu] += 1.0
-            degrees[iv] += 1.0
-        degrees[:m] += attach.astype("float32")
+        degrees[:m] += np.bincount(np.concatenate([iu, iv]),
+                                   minlength=m).astype("float32")
+        degrees[:m] += attach
         degrees[m] += float(attach.sum())
 
         keep = np.arange(m)
         pruned = False
         if self.max_hops is not None and m > 1:
-            adjacency: dict[int, list[int]] = {}
-            for iu, iv in pairs:
-                adjacency.setdefault(iu, []).append(iv)
-                adjacency.setdefault(iv, []).append(iu)
-            reached = set(np.flatnonzero(attach).tolist())
-            frontier = reached
+            reached = attach.copy()
             for _ in range(max(0, self.max_hops - 1)):
-                nxt = {w for v in frontier for w in adjacency.get(v, [])} - reached
-                if not nxt:
+                grown = reached.copy()
+                grown[iv[reached[iu]]] = True
+                grown[iu[reached[iv]]] = True
+                if grown.sum() == reached.sum():
                     break
-                reached |= nxt
-                frontier = nxt
-            if len(reached) < m:
-                keep = np.sort(np.fromiter(reached, dtype="int64", count=len(reached)))
+                reached = grown
+            if reached.sum() < m:
+                keep = np.flatnonzero(reached)
                 pruned = True
 
         k = len(keep)
-        local = {int(v): i for i, v in enumerate(keep)}
+        if pruned:
+            local = np.full(m, -1, dtype="int64")
+            local[keep] = np.arange(k)
+            a, b = local[iu], local[iv]
+            both = (a >= 0) & (b >= 0)
+            a, b = a[both], b[both]
+        else:
+            a, b = iu, iv
         big = np.zeros((k + 1, k + 1), dtype="float32")
-        for iu, iv in pairs:
-            a, b = local.get(iu), local.get(iv)
-            if a is not None and b is not None:
-                big[a, b] = big[b, a] = 1.0
+        big[a, b] = big[b, a] = 1.0
         kept_attach = attach[keep].astype("float32")
         big[k, :k] = big[:k, k] = kept_attach
 

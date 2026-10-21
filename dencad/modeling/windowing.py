@@ -275,17 +275,24 @@ def window_statistics(train, names: Sequence[str],
     for c in cols:
         s = row[f"s_{c}"]
         s = 0.0 if s is None else float(s)
-        if s == 0.0:
+        m = float(row[f"m_{c}"] or 0.0)
+
+        if s == 0.0 or abs(m) + s < FLAT:
             flat.append(c)
             s = 1.0
-        stats[c] = (float(row[f"m_{c}"] or 0.0), s)
+        stats[c] = (m, s)
     if flat:
-        logger.warning("  {} window features have zero spread in training; centred but "
-                       "not scaled: {}", len(flat), ", ".join(flat[:8]))
+        logger.warning("  {} window features never move in training; centred but not "
+                       "scaled: {}", len(flat), ", ".join(flat[:8]))
     skipped = len(names) - len(cols)
     logger.info("  window scaling fitted on train: {} features z-scored, {} left as "
                 "given ({})", len(cols), skipped, ", ".join(skip))
     return stats
+
+
+
+CLIP = 1e3
+FLAT = 1e-12
 
 
 def apply_scaling(df, stats: dict[str, tuple[float, float]]):
@@ -295,7 +302,9 @@ def apply_scaling(df, stats: dict[str, tuple[float, float]]):
     for c in df.columns:
         if c in stats:
             mean, std = stats[c]
-            out.append(((F.col(c) - F.lit(mean)) / F.lit(std)).alias(c))
+            z = (F.col(c) - F.lit(mean)) / F.lit(std)
+            out.append(F.greatest(F.least(z, F.lit(CLIP)),
+                                  F.lit(-CLIP)).alias(c))
         else:
             out.append(F.col(c))
     return df.select(*out)

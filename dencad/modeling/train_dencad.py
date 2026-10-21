@@ -106,13 +106,27 @@ def _normalise(A, mask, degrees=None):
     return A * deg.unsqueeze(2) * deg.unsqueeze(1)
 
 
+CHUNK_FLOATS = 16 * 1024 * 1024
+
+
+def _chunks(egos, indices, size: int):
+    chunk: list = []
+    for i in indices:
+        m = len(egos[i].features)
+        if chunk and ((len(chunk) + 1) * m * m > CHUNK_FLOATS or len(chunk) >= size):
+            yield chunk
+            chunk = []
+        chunk.append(i)
+    if chunk:
+        yield chunk
+
+
 def batches(egos, indices, d: int, size: int, mask_centre: bool) -> list:
     """Padded batches of similar-sized contextual subgraphs, built once."""
 
     out = []
     indices = sorted(indices, key=lambda i: len(egos[i].features))
-    for s in range(0, len(indices), size):
-        chunk = indices[s:s + size]
+    for chunk in _chunks(egos, indices, size):
         b = len(chunk)
         k = np.fromiter((len(egos[i].features) for i in chunk), dtype="int64",
                         count=b)
@@ -380,7 +394,7 @@ def train_dencad(split_dir: Path | str,
                        validation=vqueries,
                        meta={"dataset": dataset,
                              "eps": float(eps)})
-        state_dict, best_ap, best_epoch = fit_shards(
+        state_dict, best_ap, best_epoch, train_loss = fit_shards(
             shard_dir, cfg, len(features), replicas,
             eps=eps, on_ap=on_ap)
         model.net.load_state_dict(state_dict)
@@ -389,13 +403,9 @@ def train_dencad(split_dir: Path | str,
         logger.success("autoencoder fitted, best validation AP {:.5f}", best_ap)
 
        
-        scores = {"train": _score_frames(spark, win["train"], placed, clustered,
-                                         members, model, cfg, features,
-                                         eps)}
-        for part in parts[1:]:
-            scores[part] = _score_frames(
-                spark, win[part], _place(spark, win[part], pool, features),
-                clustered, members, model, cfg, features, eps)
+        scores = {part: _score_frames(
+            spark, win[part], _place(spark, win[part], pool, features),
+            clustered, members, model, cfg, features, eps) for part in parts[1:]}
     finally:
         spark.stop()
 
@@ -407,8 +417,7 @@ def train_dencad(split_dir: Path | str,
         logger.info("threshold carried from the selection at {:.6f}", carried)
 
 
-    train_loss = float(np.mean(scores["train"]))
-    logger.info("mean reconstruction error on train {:.6f}", train_loss)
+    logger.info("training loss at the chosen epoch {:.6f}", train_loss)
     results = {}
     for part in [p for p in parts if p != "train"]:
         m = metrics(labels[part], scores[part],

@@ -18,17 +18,11 @@ from dencad.modeling.evaluate import metrics
 from dencad.modeling.shards import read_shard
 
 
-def _score_local(forward, egos, cfg, d) -> np.ndarray:
+def _score_local(forward, made, n: int) -> np.ndarray:
     """Reconstruction error of each subgraph, with the replica's own weights."""
-    from dencad.modeling.train_dencad import batches
-
-    out = np.full(len(egos), np.nan)
-    if not len(egos):
-        return out
+    out = np.full(n, np.nan)
     with torch.no_grad():
-        for X, A_hat, centre, target, chunk in batches(
-                egos, list(range(len(egos))), d, cfg["batch_size"],
-                cfg["mask_centre"]):
+        for X, A_hat, centre, target, chunk in made:
             out[chunk] = ((forward(X, A_hat, centre) - target) ** 2
                           ).mean(1).numpy()
     return out
@@ -79,6 +73,9 @@ def _worker(rank: int, world_size: int, source: dict, out: str, cfg: dict,
                         if cfg["scale_learning_rate"] else " (unscaled)")
 
         fitbatches = batches(egos, mine, d, cfg["batch_size"], cfg["mask_centre"])
+        valbatches = (batches(val_egos, list(range(len(val_egos))), d,
+                              cfg["batch_size"], cfg["mask_centre"])
+                      if val_egos else [])
 
         steps = torch.tensor([len(fitbatches)], dtype=torch.long)
         dist.all_reduce(steps, op=dist.ReduceOp.MIN)
@@ -91,7 +88,7 @@ def _worker(rank: int, world_size: int, source: dict, out: str, cfg: dict,
         def forward(X, A_hat, centre):
             return replica(X, A_hat, centre)
 
-        best, waited, state, best_epoch = -np.inf, 0, None, 0
+        best, waited, state, best_epoch, best_loss = -np.inf, 0, None, 0, float("nan")
         fixed = cfg.get("fixed_epochs")
         if not fixed and not on_ap:
             raise ValueError("a fit that does not stop on the validation AP needs "
@@ -105,11 +102,16 @@ def _worker(rank: int, world_size: int, source: dict, out: str, cfg: dict,
         for epoch in range(1, epochs + 1):
             replica.train()
             shuffler.shuffle(order)
+            run = torch.zeros(2)
             for j in order[:steps]:
                 X, A_hat, centre, target, _ = fitbatches[j]
                 opt.zero_grad()
-                ((forward(X, A_hat, centre) - target) ** 2).mean().backward()
+                err = ((forward(X, A_hat, centre) - target) ** 2).mean()
+                err.backward()
                 opt.step()
+                run += torch.tensor([float(err) * len(centre), float(len(centre))])
+            dist.all_reduce(run, op=dist.ReduceOp.SUM)
+            loss = float(run[0] / max(float(run[1]), 1.0))
 
             if epoch == 1:
                 flat = torch.cat([p.detach().flatten()
@@ -128,11 +130,11 @@ def _worker(rank: int, world_size: int, source: dict, out: str, cfg: dict,
                         logger.info("  epoch {:>3} of {}", epoch, epochs)
                     state = {k: v.clone()
                              for k, v in replica.module.state_dict().items()}
-                    best_epoch = epoch
+                    best_epoch, best_loss = epoch, loss
                 continue
 
             replica.eval()
-            mine_scores = _score_local(forward, val_egos, cfg, d)
+            mine_scores = _score_local(forward, valbatches, len(val_egos))
             pieces = [None] * world_size
             dist.all_gather_object(pieces, (mine_scores, shard["val_y"]))
             scores = np.concatenate([p[0] for p in pieces])
@@ -142,7 +144,7 @@ def _worker(rank: int, world_size: int, source: dict, out: str, cfg: dict,
             if rank == 0 and (epoch % 5 == 0 or epoch == 1):
                 logger.info("  epoch {:>3}: validation AP {:.5f}", epoch, seen)
             if seen > best + 1e-5:
-                best, waited, best_epoch = seen, 0, epoch
+                best, waited, best_epoch, best_loss = seen, 0, epoch, loss
                 if rank == 0:
                     state = {k: v.clone()
                              for k, v in replica.module.state_dict().items()}
@@ -155,16 +157,16 @@ def _worker(rank: int, world_size: int, source: dict, out: str, cfg: dict,
 
         if rank == 0:
             torch.save({"state": state, "best": float(best),
-                        "epoch": int(best_epoch)}, out)
+                        "epoch": int(best_epoch), "loss": float(best_loss)}, out)
     finally:
         dist.destroy_process_group()
 
 
 def fit_shards(shards_dir, cfg: dict, d: int, world_size: int,
                eps: float, on_ap: bool,
-               out: Optional[Path] = None) -> tuple[dict, float, int]:
-    """Fit the replicas from parquet shards. Returns the weights, the score and the
-    epoch they came from."""
+               out: Optional[Path] = None) -> tuple[dict, float, int, float]:
+    """Fit the replicas from parquet shards. Returns the weights, the score, the epoch
+    they came from and the training loss at that epoch."""
 
     shards_dir = Path(shards_dir)
     out = Path(out) if out else shards_dir / "fitted.pt"
@@ -180,7 +182,8 @@ def fit_shards(shards_dir, cfg: dict, d: int, world_size: int,
     mp.spawn(_worker, args=(world_size, source, str(out), cfg, d),
              nprocs=world_size, join=True)
     got = torch.load(out, weights_only=False)
-    return got["state"], float(got["best"]), int(got["epoch"])
+    return (got["state"], float(got["best"]), int(got["epoch"]),
+            float(got.get("loss", float("nan"))))
 
 
 __all__ = ["fit_shards"]

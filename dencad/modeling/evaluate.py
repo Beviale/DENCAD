@@ -41,13 +41,19 @@ def metrics(y: np.ndarray, score: np.ndarray,
     pred = (score >= threshold).astype("uint8")
     starts, ends = segments(y)
     caught = sum(1 for a, b in zip(starts, ends) if pred[a:b].any())
+
+
+    adjusted = pred.copy()
+    for a, b in zip(starts, ends):
+        if pred[a:b].any():
+            adjusted[a:b] = 1
     out.update({
         "threshold": float(threshold),
         "flagged": int(pred.sum()),
         "flagged_share": float(pred.mean()),
-        "precision": float(precision_score(y, pred, zero_division=0)),
-        "recall": float(recall_score(y, pred, zero_division=0)),
-        "f1": float(f1_score(y, pred, zero_division=0)),
+        "precision": float(precision_score(y, adjusted, zero_division=0)),
+        "recall": float(recall_score(y, adjusted, zero_division=0)),
+        "f1": float(f1_score(y, adjusted, zero_division=0)),
         "segments": int(len(starts)),
         "segments_caught": int(caught),
         "segment_recall": float(caught / len(starts)) if len(starts) else None,

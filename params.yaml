@@ -2,11 +2,11 @@ data:
   window_steps:                     
     swat: 60                         # 1 s per reading
     hai: 30                          # 1 s per reading
-    esa: 33                          # 18 s per reading
+    esa: 132                         # 18 s per reading, so about 40 minutes
   eps: &eps
     swat: [1.05, 1.20]
     hai: [5.80, 6.10]
-    esa: [1.00, 2.00]                # MEASURE FIRST: placeholder, not measured
+    esa: [5.20, 5.40]
   scale_windows: true
   seed: 42
   workers: 4
@@ -55,7 +55,7 @@ dencad:
   min_coverage: 0.5
   max_epochs: 200
   attach_to: clustered
-  max_members: null                  # null is the whole cluster
+  max_members: 500                   # cap on the cluster members per example
   mask_centre: false                 # hide the centre's own attributes, or keep them
   replicas: 4
   scale_learning_rate: true
