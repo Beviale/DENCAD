@@ -79,3 +79,22 @@ dencad:
     learning_rate: [0.001, 0.003]
     batch_size: [128]
     patience: [20]
+
+# The same autoencoder on the hop ball of the nearest object, without the clustering.
+ego:
+  contaminated_refit: false
+  min_coverage: 0.5
+  max_epochs: 200
+  mask_centre: false
+  grid:
+    bits: [16, 24]
+    permutations: [10, 20]
+    band: [20, 50]
+    eps: *eps
+    width_factor: [1.0, 2.0]
+    hidden: [64, 128]
+    latent: [16, 32]
+    layers: [2, 3]
+    learning_rate: [0.001, 0.003]
+    batch_size: [128]
+    patience: [20]
