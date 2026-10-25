@@ -67,7 +67,7 @@ def search(split_dir: Path | str, reports_dir: Path | str = Path("reports"),
     reports_dir = Path(reports_dir)
     dataset, _ = discover(split_dir)
     trainer = MODELS[model]
-    grid = grid_axes(model, dataset)
+    grid = grid_axes(model, dataset, split_dir.name)
     if not grid:
         raise ValueError(f"params.yaml has no grid for {model!r} on {dataset!r}")
     drawn = plan(grid, runs, seed)
