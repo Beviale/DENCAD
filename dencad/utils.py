@@ -71,24 +71,28 @@ def section(name: str) -> dict:
     return got.to_dict() if hasattr(got, "to_dict") else dict(got or {})
 
 
-def grid_axes(model: str, dataset: str | None = None) -> dict[str, list]:
+def grid_axes(model: str, dataset: str | None = None,
+              variant: str | None = None) -> dict[str, list]:
     """A model's grid: one list of values per axis, the dataset's entry resolved."""
     out: dict[str, list] = {}
     for name, values in (section(model).get("grid") or {}).items():
-        if isinstance(values, dict):          # written per dataset
-            if dataset is None or dataset not in values:
+        if isinstance(values, dict):          # written per variant or per dataset
+            key = next((k for k in (variant, dataset) if k is not None and k in values),
+                       None)
+            if key is None:
                 continue
-            values = values[dataset]
+            values = values[key]
         out[name] = list(values) if isinstance(values, (list, tuple)) else [values]
     return out
 
 
-def model_config(model: str, dataset: str | None = None) -> dict:
+def model_config(model: str, dataset: str | None = None,
+                 variant: str | None = None) -> dict:
     """A model's settings: the shared data block, the head of every grid axis as
     its default, then the model's own keys on top."""
     cfg = dict(section("data"))
     cfg.pop("eps", None)                      # an axis, resolved from the grid
-    cfg.update({k: v[0] for k, v in grid_axes(model, dataset).items() if v})
+    cfg.update({k: v[0] for k, v in grid_axes(model, dataset, variant).items() if v})
     cfg.update({k: v for k, v in section(model).items() if k != "grid"})
     if dataset is not None:
         cfg["window_steps"] = (cfg.get("window_steps") or {}).get(dataset)
