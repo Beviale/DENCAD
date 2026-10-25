@@ -13,19 +13,18 @@ import json
 
 from dencad.modeling import clustering as C
 from dencad.modeling import windowing as W
-from dencad.modeling.evaluate import metrics, save_report
+from dencad.modeling.evaluate import (in_sigmas, metrics, save_report,
+                                      sigma_scale)
 from dencad.modeling.lsh import ID, NeighbourhoodGraph
 from dencad.modeling.train_dencad import DEFAULTS, _place, _pool_frame
-from dencad.utils import declared_categorical, model_config
+from dencad.utils import declared_categorical, k_sigma, model_config
 
 PARTS = ("train", "validation", "test")
-EPS = 1e-6
 
 
-def _scores(placed, mu: float, sd: float, n: int) -> np.ndarray:
-    """z per window, ordered by row id. Far from the graph is high."""
-    got = (placed.select("_row", ((F.col("_dist") - F.lit(mu))
-                                  / F.lit(max(sd, EPS))).alias("_z"))
+def _scores(placed, n: int) -> np.ndarray:
+    """Placement distance per window, ordered by row id."""
+    got = (placed.select("_row", F.col("_dist").alias("_z"))
            .orderBy("_row").toPandas())
     out = np.full(n, np.nan)
     out[got["_row"].to_numpy().astype("int64")] = got["_z"].to_numpy()
@@ -50,7 +49,7 @@ def train_sigma(split_dir: Path | str, reports_dir: Path | str = Path("reports")
 
     split_dir, reports_dir = Path(split_dir), Path(reports_dir)
     dataset, files = W.discover(split_dir)
-    cfg = {**DEFAULTS, **model_config("sigma", dataset),
+    cfg = {**DEFAULTS, **model_config("sigma", dataset, split_dir.name),
            **{k: v for k, v in overrides.items() if v is not None}}
     if eps is None:
         eps = cfg.get("eps")
@@ -75,8 +74,6 @@ def train_sigma(split_dir: Path | str, reports_dir: Path | str = Path("reports")
             min_coverage=min_coverage, scale=cfg["scale_windows"])
 
         if stage == "final":
-            # Only the normal windows, except on the contaminated ESA case, which
-            # exists to ask what happens when they are not filtered out.
             extra = (win["validation"] if cfg.get("contaminated_refit")
                      else win["validation"].filter(F.col(label) == 0))
             n_extra = extra.count()
@@ -111,33 +108,31 @@ def train_sigma(split_dir: Path | str, reports_dir: Path | str = Path("reports")
         pool = _pool_frame(win["train"], pool_nodes,
                            features).localCheckpoint(eager=True)
 
-        scored_parts = [p for p in parts if p != "train"]
-        placed = {p: _place(spark, win[p], pool, features) for p in scored_parts}
+        placed = {p: _place(spark, win[p], pool, features,
+                            exclude_self=(p == "train")) for p in parts}
 
-        normals = placed["validation"].join(
-            win["validation"].filter(F.col(label) == 0),
-            placed["validation"]["_row"] == win["validation"][ID])
-        spread = normals.agg(F.avg("_dist"), F.stddev_pop("_dist")).collect()[0]
-        mu, sd = float(spread[0]), float(spread[1] or 0.0)
-        logger.info("placement distance of the normal validation windows: "
-                    "mean {:.4f}, deviation {:.4f}", mu, sd)
-
-        scores = {p: _scores(placed[p], mu, sd, len(labels[p])) for p in scored_parts}
+        scores = {p: _scores(placed[p], len(labels[p])) for p in parts}
     finally:
         spark.stop()
 
+    mu, sd = sigma_scale(scores["train"])
+    z = {p: in_sigmas(s, mu, sd) for p, s in scores.items()}
+
     if stage == "final":
         carried = float(selected["threshold"])
-        logger.info("threshold carried from the selection: k = {:.3f} sigma", carried)
     else:
-        carried = float(metrics(labels["validation"],
-                                scores["validation"])["threshold"])
-        logger.info("threshold chosen on validation: k = {:.3f} sigma, distance "
-                    "{:.4f}", carried, mu + carried * sd)
+        by_k = {k: metrics(labels["validation"], z["validation"], threshold=k)
+                for k in k_sigma()}
+        for k, m in by_k.items():
+            logger.info("  k = {:<4} precision {:.4f}  recall {:.4f}  F1 {:.4f}  "
+                        "flagged {:.2%}", k, m["precision"], m["recall"], m["f1"],
+                        m["flagged_share"])
+        carried = float(max(by_k, key=lambda k: by_k[k]["f1"]))
+    logger.info("k = {:.3f} sigma | scale {:.6f} +/- {:.6f}", carried, mu, sd)
 
     results = {}
-    for part in scored_parts:
-        m = metrics(labels[part], scores[part], threshold=carried)
+    for part in parts[1:]:
+        m = metrics(labels[part], z[part], threshold=carried)
         results[part] = m
         logger.success("  {:<11} ROC-AUC {:.4f}  AP {:.4f}  F1 {:.4f}  "
                        "segments {}/{}", part, m["roc_auc"],
@@ -150,7 +145,7 @@ def train_sigma(split_dir: Path | str, reports_dir: Path | str = Path("reports")
         {"window_steps": int(window_steps), "eps": float(eps), "width": float(width), **{k: cfg[k] for k in ("bits", "permutations", "band", "min_pts", "label_change_rate", "attach_to", "seed")}},
         {"stage": stage, "k_sigma": float(carried),
          "cut_distance": mu + carried * sd,
-         "validation_distance": {"mean": mu, "deviation": sd},
+         "spread": {"mean": mu, "deviation": sd},
          "windows": {p: int(len(labels[p])) for p in parts},
          "graph": {"edges": int(n_edges), "clusters": summary.get("clusters")}},
         write=(stage == "final"))
@@ -164,7 +159,8 @@ def _carry(path):
     if "best" in d:
         return d["best"]
     return {"config": d.get("config", {}), "threshold": d["threshold"],
-            "epoch": d.get("epoch", 0)}
+            "epoch": d.get("epoch", 0),
+            "spread": d.get("validation_distance")}
 
 
 def main() -> None:
