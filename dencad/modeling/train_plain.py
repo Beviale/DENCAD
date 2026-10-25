@@ -14,12 +14,13 @@ from pyspark.sql import functions as F
 import torch
 
 from dencad.modeling import windowing as W
-from dencad.modeling.evaluate import metrics, save_report
+from dencad.modeling.evaluate import (in_sigmas, metrics, save_report,
+                                      sigma_scale)
 from dencad.modeling.lsh import ID
 from dencad.modeling.subgraphs import ContextualSubgraph
 from dencad.modeling.train_dencad import (DEFAULTS, GraphAutoEncoder, batches,
                                           _score)
-from dencad.utils import declared_categorical, model_config
+from dencad.utils import declared_categorical, k_sigma, model_config
 
 PARTS = ("train", "validation", "test")
 
@@ -27,7 +28,7 @@ PARTS = ("train", "validation", "test")
 def _alone(x: np.ndarray) -> ContextualSubgraph:
     """One window as its own subgraph: no neighbours, so A_hat is the identity."""
     return ContextualSubgraph(features=np.asarray(x, dtype="float32")[None, :],
-                              adjacency=np.zeros((1, 1), dtype="float32"), centre=0)
+                              edges=np.zeros((0, 2), dtype="int32"), centre=0)
 
 
 def _egos(win, features) -> tuple[np.ndarray, list]:
@@ -120,7 +121,7 @@ def train_plain(split_dir: Path | str, reports_dir: Path | str = Path("reports")
 
     split_dir, reports_dir = Path(split_dir), Path(reports_dir)
     dataset, files = W.discover(split_dir)
-    cfg = {**DEFAULTS, **model_config("plain", dataset),
+    cfg = {**DEFAULTS, **model_config("plain", dataset, split_dir.name),
            **{k: v for k, v in overrides.items() if v is not None}}
     window_steps = int(window_steps or cfg["window_steps"])
     min_coverage = float(cfg["min_coverage"])
@@ -135,8 +136,6 @@ def train_plain(split_dir: Path | str, reports_dir: Path | str = Path("reports")
             min_coverage=min_coverage, scale=cfg["scale_windows"])
 
         if stage == "final":
-            # Only the normal windows, except on the contaminated ESA case, which
-            # exists to ask what happens when they are not filtered out.
             extra = (win["validation"] if cfg.get("contaminated_refit")
                      else win["validation"].filter(F.col(label) == 0))
             n_extra = extra.count()
@@ -162,19 +161,26 @@ def train_plain(split_dir: Path | str, reports_dir: Path | str = Path("reports")
     finally:
         spark.stop()
 
-    if stage == "select":
-        carried = metrics(labels["validation"], scores["validation"])["threshold"]
-        logger.info("threshold chosen on validation at {:.6f}", carried)
-    else:
+    mu, sd = sigma_scale(scores["train"])
+    z = {p: in_sigmas(s, mu, sd) for p, s in scores.items()}
+
+    if stage == "final":
         carried = float(selected["threshold"])
-        logger.info("threshold carried from the selection at {:.6f}", carried)
+    else:
+        by_k = {k: metrics(labels["validation"], z["validation"], threshold=k)
+                for k in k_sigma()}
+        for k, m in by_k.items():
+            logger.info("  k = {:<4} precision {:.4f}  recall {:.4f}  F1 {:.4f}  "
+                        "flagged {:.2%}", k, m["precision"], m["recall"], m["f1"],
+                        m["flagged_share"])
+        carried = float(max(by_k, key=lambda k: by_k[k]["f1"]))
+    logger.info("k = {:.3f} sigma | scale {:.6f} +/- {:.6f}", carried, mu, sd)
 
     train_loss = float(np.mean(scores["train"]))
     logger.info("mean reconstruction error on train {:.6f}", train_loss)
     results = {}
     for part in [p for p in parts if p != "train"]:
-        m = metrics(labels[part], scores[part],
-                    threshold=carried if part != "validation" else None)
+        m = metrics(labels[part], z[part], threshold=carried)
         results[part] = m
         logger.success("  {:<11} ROC-AUC {:.4f}  AP {:.4f}  F1 {:.4f}  "
                        "segments {}/{}", part, m["roc_auc"],
@@ -186,6 +192,7 @@ def train_plain(split_dir: Path | str, reports_dir: Path | str = Path("reports")
         "plain autoencoder", dataset, results, carried,
         {"window_steps": int(window_steps), **{k: cfg[k] for k in ("hidden", "latent", "layers", "learning_rate", "batch_size", "patience", "mask_centre", "seed")}},
         {"stage": stage, "epoch": int(epoch), "train_loss": train_loss,
+         "spread": {"mean": mu, "deviation": sd},
          "windows": {p: int(len(labels[p])) for p in parts}},
         write=(stage == "final"))
     return report
