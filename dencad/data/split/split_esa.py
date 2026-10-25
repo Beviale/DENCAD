@@ -7,9 +7,9 @@ import pandas as pd
 
 from dencad.data.split.split import Splitter
 
-LEAD_IN_END = "2000-02-28 06:22:30"
-VALID_START = "2001-10-01"
-TEST_START = "2002-04-03"
+
+VALID_START = "2009-09-13"
+TEST_START = "2011-11-02"
 DIRTY = ("is_anomaly", "is_rare_event")
 
 
@@ -21,20 +21,8 @@ class EsaSplitter(Splitter):
         valid_start: str = VALID_START,
         test_start: str = TEST_START,
         name: str = "esa",
-        lead_in_end: str = LEAD_IN_END,
     ) -> None:
         super().__init__(source, out_dir, valid_start, test_start, name)
-        self.lead_in_end = pd.Timestamp(lead_in_end)
-
-    def load(self) -> pd.DataFrame:
-        df = super().load()
-        keep = df.index >= self.lead_in_end
-        dropped = int((~keep).sum())
-        if dropped:
-            logger.info("dropping the lead-in: {:,} rows before {} ({:.2%} of the "
-                        "table), where 99 of 100 channels have yet to report",
-                        dropped, self.lead_in_end, dropped / len(df))
-        return df.loc[keep]
 
     def cut(self, df: pd.DataFrame) -> dict[str, pd.DataFrame]:
         parts = super().cut(df)
@@ -54,4 +42,4 @@ if __name__ == "__main__":
     main()
 
 
-__all__ = ["EsaSplitter", "LEAD_IN_END", "VALID_START", "TEST_START"]
+__all__ = ["EsaSplitter", "VALID_START", "TEST_START"]
