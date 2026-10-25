@@ -1,4 +1,4 @@
-"""ESA Anomaly Dataset, Mission 2: 100 independent channels into one table."""
+"""ESA Anomaly Dataset, Mission 1: 76 independent channels into one table."""
 
 from __future__ import annotations
 
@@ -17,14 +17,14 @@ NOMINAL, ANOMALY, RARE_EVENT = 0, 1, 2
 
 
 class EsaPreprocessor(Preprocessor):
-    """Mission 2 of the ESA Anomaly Dataset"""
+    """Mission 1 of the ESA Anomaly Dataset"""
 
     def __init__(
         self,
-        source: Path = Path("data/raw/esa/ESA-Mission2"),
+        source: Path = Path("data/raw/esa/ESA-Mission1"),
         out_dir: Path = Path("data/interim/esa"),
         name: str = "full_esa",
-        rule: str = "18s",
+        rule: str = "60s",
         channels: Optional[Sequence[str]] = None,
         target_only: bool = False,
         block_rows: int = 400_000,
@@ -33,7 +33,7 @@ class EsaPreprocessor(Preprocessor):
         # The interval of the common grid every channel is resampled onto, as a pandas
         # frequency string.
         self.rule = rule
-        # If True, load only the 47 channels 'channels.csv' marks Target=YES, instead of all 100.
+        # If True, load only the 58 channels 'channels.csv' marks Target=YES, instead of all 76.
         self.target_only = target_only 
         # Before a channel first reports there is nothing to hold forward, so the
         # grid starts with NaN and keeps it. 
@@ -91,8 +91,7 @@ class EsaPreprocessor(Preprocessor):
         df = pd.read_pickle(self.source / "channels" / f"{name}.zip")
         s = df[name]
         if s.dtype == object:
-            # Ten channels are flagged Categorical; factorising keeps them in the
-            # table as integer codes.
+            # Mission 1 flags no channel Categorical and stores every one as float32
             s = pd.Series(pd.factorize(s)[0], index=s.index, name=name)
         pos = s.index.searchsorted(grid, side="right") - 1
         out = np.full(len(grid), np.nan, dtype=np.float32)
