@@ -23,10 +23,10 @@ from pyspark.sql import functions as F
 
 from dencad.modeling import clustering as C
 from dencad.modeling import windowing as W
-from dencad.modeling.evaluate import metrics, save_report
+from dencad.modeling.evaluate import in_sigmas, metrics, save_report
 from dencad.modeling.lsh import ID, NeighbourhoodGraph
 from dencad.modeling.placement import nearest_grid_frames
-from dencad.utils import declared_categorical, model_config
+from dencad.utils import declared_categorical, k_sigma, model_config
 from dencad.modeling.shards import query_frame
 from dencad.modeling.subgraphs import egos_from_rows
 from dencad.modeling.parallel import fit_shards
@@ -142,10 +142,12 @@ def batches(egos, indices, d: int, size: int, mask_centre: bool) -> list:
             e = egos[i]
             kk = int(k[j])
             X[j, :kk] = e.features
-            A[j, :kk, :kk] = e.adjacency
+            u, v = e.edges[:, 0], e.edges[:, 1]
+            A[j, u, v] = A[j, v, u] = 1.0
             if has_deg:
-                D[j, :kk] = (e.degrees if e.degrees is not None
-                             else e.adjacency.sum(1) + 1.0)
+                D[j, :kk] = (e.degrees if e.degrees is not None else
+                             np.bincount(np.concatenate([u, v]),
+                                         minlength=kk) + 1.0)
 
        
         mask = (np.arange(m)[None, :] < k[:, None]).astype("float32")
@@ -163,7 +165,7 @@ def batches(egos, indices, d: int, size: int, mask_centre: bool) -> list:
 
 
 def _score(model, egos, cfg) -> np.ndarray:
-    """Reconstruction error of the centre, one number per contextual subgraph."""
+    """Distance between the centre and its reconstruction, per contextual subgraph."""
 
     out = np.full(len(egos), np.nan)
     present = [i for i, e in enumerate(egos) if e is not None]
@@ -172,7 +174,7 @@ def _score(model, egos, cfg) -> np.ndarray:
         for X, A_hat, centre, target, chunk in batches(
                 egos, present, model.d, cfg["batch_size"], cfg["mask_centre"]):
             err = ((model.forward(X, A_hat, centre) - target) ** 2).mean(1)
-            out[chunk] = err.numpy()
+            out[chunk] = err.sqrt().numpy()
     return out
 
 
@@ -284,7 +286,7 @@ def train_dencad(split_dir: Path | str,
 
     split_dir, reports_dir = Path(split_dir), Path(reports_dir)
     dataset, files = W.discover(split_dir)
-    cfg = {**DEFAULTS, **model_config("dencad", dataset),
+    cfg = {**DEFAULTS, **model_config("dencad", dataset, split_dir.name),
            **{k: v for k, v in overrides.items() if v is not None}}
     if eps is None:
         eps = cfg.get("eps")
@@ -328,8 +330,6 @@ def train_dencad(split_dir: Path | str,
         on_ap = stage == "select"
         if stage == "final":
             cfg["fixed_epochs"] = int(selected["epoch"])
-            # Only the normal windows, except on the contaminated ESA case, which
-            # exists to ask what happens when they are not filtered out.
             extra = (win["validation"] if cfg.get("contaminated_refit")
                      else win["validation"].filter(F.col(label) == 0))
             n_extra = extra.count()
@@ -394,7 +394,7 @@ def train_dencad(split_dir: Path | str,
                        validation=vqueries,
                        meta={"dataset": dataset,
                              "eps": float(eps)})
-        state_dict, best_ap, best_epoch, train_loss = fit_shards(
+        state_dict, best_ap, best_epoch, train_loss, spread = fit_shards(
             shard_dir, cfg, len(features), replicas,
             eps=eps, on_ap=on_ap)
         model.net.load_state_dict(state_dict)
@@ -409,19 +409,26 @@ def train_dencad(split_dir: Path | str,
     finally:
         spark.stop()
 
-    if stage == "select":
-        carried = metrics(labels["validation"], scores["validation"])["threshold"]
-        logger.info("threshold chosen on validation at {:.6f}", carried)
-    else:
+    mu, sd = spread
+    z = {p: in_sigmas(s, mu, sd) for p, s in scores.items()}
+
+    if stage == "final":
         carried = float(selected["threshold"])
-        logger.info("threshold carried from the selection at {:.6f}", carried)
+    else:
+        by_k = {k: metrics(labels["validation"], z["validation"], threshold=k)
+                for k in k_sigma()}
+        for k, m in by_k.items():
+            logger.info("  k = {:<4} precision {:.4f}  recall {:.4f}  F1 {:.4f}  "
+                        "flagged {:.2%}", k, m["precision"], m["recall"], m["f1"],
+                        m["flagged_share"])
+        carried = float(max(by_k, key=lambda k: by_k[k]["f1"]))
+    logger.info("k = {:.3f} sigma | scale {:.6f} +/- {:.6f}", carried, mu, sd)
 
 
     logger.info("training loss at the chosen epoch {:.6f}", train_loss)
     results = {}
     for part in [p for p in parts if p != "train"]:
-        m = metrics(labels[part], scores[part],
-                    threshold=carried if part != "validation" else None)
+        m = metrics(labels[part], z[part], threshold=carried)
         results[part] = m
         logger.success("  {:<11} ROC-AUC {:.4f}  AP {:.4f}  F1 {:.4f}  "
                        "segments {}/{}", part, m["roc_auc"],
@@ -433,6 +440,7 @@ def train_dencad(split_dir: Path | str,
         "DENCAD", dataset, results, carried,
         {"window_steps": int(window_steps), "eps": float(eps), "width": float(width), **{k: cfg[k] for k in ("bits", "permutations", "band", "min_pts", "label_change_rate", "attach_to", "max_members", "mask_centre", "hidden", "latent", "layers", "learning_rate", "batch_size", "patience", "replicas", "seed")}},
         {"stage": stage, "epoch": int(best_epoch), "train_loss": train_loss,
+         "spread": {"mean": mu, "deviation": sd},
          "windows": {p: int(len(labels[p])) for p in parts},
          "graph": {"edges": int(n_edges), "clusters": summary.get("clusters")}},
         write=(stage == "final"))
