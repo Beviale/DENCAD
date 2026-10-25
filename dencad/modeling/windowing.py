@@ -133,9 +133,11 @@ def window(df, columns: list[str], steps: int, label: str,
     aggs = [F.max(F.col(label)).cast("double").alias(label),
             F.count(F.lit(1)).alias("_rows")]
     for c in numeric:
-        names += [f"{c}_mean", f"{c}_std"]
+        names += [f"{c}_mean", f"{c}_std", f"{c}_min", f"{c}_max"]
         aggs.append(F.coalesce(F.mean(F.col(c)), F.lit(0.0)).alias(f"{c}_mean"))
-        aggs.append(F.coalesce(F.stddev_pop(F.col(c)), F.lit(0.0)).alias(f"{c}_std"))  
+        aggs.append(F.coalesce(F.stddev_pop(F.col(c)), F.lit(0.0)).alias(f"{c}_std"))
+        aggs.append(F.coalesce(F.min(F.col(c)), F.lit(0.0)).alias(f"{c}_min"))
+        aggs.append(F.coalesce(F.max(F.col(c)), F.lit(0.0)).alias(f"{c}_max"))
     out = base.groupBy("_w").agg(*aggs)
 
     if categorical:
