@@ -43,23 +43,30 @@ def metrics(y: np.ndarray, score: np.ndarray,
     caught = sum(1 for a, b in zip(starts, ends) if pred[a:b].any())
 
 
-    adjusted = pred.copy()
-    for a, b in zip(starts, ends):
-        if pred[a:b].any():
-            adjusted[a:b] = 1
     out.update({
         "threshold": float(threshold),
         "flagged": int(pred.sum()),
         "flagged_share": float(pred.mean()),
-        "precision": float(precision_score(y, adjusted, zero_division=0)),
-        "recall": float(recall_score(y, adjusted, zero_division=0)),
-        "f1": float(f1_score(y, adjusted, zero_division=0)),
+        "precision": float(precision_score(y, pred, zero_division=0)),
+        "recall": float(recall_score(y, pred, zero_division=0)),
+        "f1": float(f1_score(y, pred, zero_division=0)),
         "segments": int(len(starts)),
         "segments_caught": int(caught),
         "segment_recall": float(caught / len(starts)) if len(starts) else None,
     })
     return out
 
+
+
+def sigma_scale(score: np.ndarray) -> tuple[float, float]:
+    """Mean and deviation of the score on the rows the model was fitted on."""
+    s = np.asarray(score)
+    return float(s.mean()), float(s.std())
+
+
+def in_sigmas(score: np.ndarray, mu: float, sd: float) -> np.ndarray:
+    """The score in deviations of that scale."""
+    return (np.asarray(score) - mu) / max(sd, 1e-12)
 
 
 def save_report(out, model: str, dataset: str, results: dict, threshold: float,
@@ -77,4 +84,5 @@ def save_report(out, model: str, dataset: str, results: dict, threshold: float,
     return report
 
 
-__all__ = ["metrics", "segments", "save_report", "PARTS"]
+__all__ = ["metrics", "segments", "save_report", "sigma_scale", "in_sigmas",
+           "PARTS"]
