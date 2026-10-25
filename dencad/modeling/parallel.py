@@ -125,12 +125,11 @@ def _worker(rank: int, world_size: int, source: dict, out: str, cfg: dict,
                         "the gradients are not being averaged")
 
             if fixed:
-                if rank == 0:
-                    if epoch % 5 == 0 or epoch == 1:
-                        logger.info("  epoch {:>3} of {}", epoch, epochs)
-                    state = {k: v.clone()
-                             for k, v in replica.module.state_dict().items()}
-                    best_epoch, best_loss = epoch, loss
+                if rank == 0 and (epoch % 5 == 0 or epoch == 1):
+                    logger.info("  epoch {:>3} of {}", epoch, epochs)
+                state = {k: v.clone()
+                         for k, v in replica.module.state_dict().items()}
+                best_epoch, best_loss = epoch, loss
                 continue
 
             replica.eval()
@@ -145,9 +144,8 @@ def _worker(rank: int, world_size: int, source: dict, out: str, cfg: dict,
                 logger.info("  epoch {:>3}: validation AP {:.5f}", epoch, seen)
             if seen > best + 1e-5:
                 best, waited, best_epoch, best_loss = seen, 0, epoch, loss
-                if rank == 0:
-                    state = {k: v.clone()
-                             for k, v in replica.module.state_dict().items()}
+                state = {k: v.clone()
+                         for k, v in replica.module.state_dict().items()}
             else:
                 waited += 1
                 if waited >= cfg["patience"]:
@@ -155,16 +153,29 @@ def _worker(rank: int, world_size: int, source: dict, out: str, cfg: dict,
                         logger.info("  stopped at epoch {}", epoch)
                     break
 
+        replica.module.load_state_dict(state)
+        replica.eval()
+        errs = np.sqrt(_score_local(forward, fitbatches, len(egos))[mine])
+        acc = torch.tensor([float(errs.sum()), float((errs ** 2).sum()),
+                            float(len(errs))], dtype=torch.float64)
+        dist.all_reduce(acc, op=dist.ReduceOp.SUM)
+        total, squares, n = acc.tolist()
+        mu = total / max(n, 1.0)
+        sd = max(squares / max(n, 1.0) - mu * mu, 0.0) ** 0.5
+
         if rank == 0:
+            logger.info("  scale on the training examples: {:.6f} +/- {:.6f}", mu, sd)
             torch.save({"state": state, "best": float(best),
-                        "epoch": int(best_epoch), "loss": float(best_loss)}, out)
+                        "epoch": int(best_epoch), "loss": float(best_loss),
+                        "mu": float(mu), "sd": float(sd)}, out)
     finally:
         dist.destroy_process_group()
 
 
 def fit_shards(shards_dir, cfg: dict, d: int, world_size: int,
                eps: float, on_ap: bool,
-               out: Optional[Path] = None) -> tuple[dict, float, int, float]:
+               out: Optional[Path] = None) -> tuple[dict, float, int, float,
+                                                      tuple[float, float]]:
     """Fit the replicas from parquet shards. Returns the weights, the score, the epoch
     they came from and the training loss at that epoch."""
 
@@ -183,7 +194,8 @@ def fit_shards(shards_dir, cfg: dict, d: int, world_size: int,
              nprocs=world_size, join=True)
     got = torch.load(out, weights_only=False)
     return (got["state"], float(got["best"]), int(got["epoch"]),
-            float(got.get("loss", float("nan"))))
+            float(got.get("loss", float("nan"))),
+            (float(got["mu"]), float(got["sd"])))
 
 
 __all__ = ["fit_shards"]
