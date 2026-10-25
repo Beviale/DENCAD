@@ -14,11 +14,13 @@ import random
 
 from dencad.modeling.train_dencad import train_dencad
 from dencad.modeling.train_plain import train_plain
+from dencad.modeling.train_ego import train_ego
 from dencad.modeling.train_sigma import train_sigma
 from dencad.modeling.windowing import discover
 from dencad.utils import grid_axes
 
-MODELS = {"dencad": train_dencad, "plain": train_plain, "sigma": train_sigma}
+MODELS = {"dencad": train_dencad, "plain": train_plain, "sigma": train_sigma,
+          "ego": train_ego}
 
 
 def plan(grid: dict[str, list], runs: int, seed: int = 42) -> list[dict]:
