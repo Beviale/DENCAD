@@ -10,7 +10,6 @@ from dencad.data.process.process import Processor
 from dencad.utils import declared_categorical
 
 ANOMALY, RARE = "is_anomaly", "is_rare_event"
-MODES = {"esa_rare_anomalies": True}
 
 
 def esa_categorical(meta_path: Path) -> list[str]:
@@ -29,7 +28,7 @@ class EsaProcessor(Processor):
         cramer_max: float = 0.99,
         rare_counts_as_positive: bool = True,
         drop_positive_train: bool = True,
-        meta_path: Path = Path("data/raw/esa/ESA-Mission2/channels.csv"),
+        meta_path: Path = Path("data/raw/esa/ESA-Mission1/channels.csv"),
     ) -> None:
         if categorical is None:
             categorical = declared_categorical(name)
@@ -88,13 +87,15 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="Process the ESA split.")
     ap.add_argument("--keep-positive-train", action="store_true",
                     help="leave the positive rows in train: the contaminated setting")
+    ap.add_argument("--rare-as-normal", action="store_true",
+                    help="count rare events as nominal, so only anomalies are positive")
     ap.add_argument("--out-dir", type=Path, default=None)
     a = ap.parse_args()
+    name = "esa_anomalies" if a.rare_as_normal else "esa_rare_anomalies"
     folder = a.out_dir or (Path("data/processed") /
-                           ("esa_contaminated" if a.keep_positive_train
-                            else "esa_rare_anomalies"))
+                           (name + "_contaminated" if a.keep_positive_train else name))
     logger.info("=== {} ===", folder.name)
-    EsaProcessor(out_dir=folder, rare_counts_as_positive=True,
+    EsaProcessor(out_dir=folder, rare_counts_as_positive=not a.rare_as_normal,
                  drop_positive_train=not a.keep_positive_train).run(overwrite=True)
 
 
@@ -102,4 +103,4 @@ if __name__ == "__main__":
     main()
 
 
-__all__ = ["EsaProcessor", "esa_categorical", "MODES"]
+__all__ = ["EsaProcessor", "esa_categorical"]
