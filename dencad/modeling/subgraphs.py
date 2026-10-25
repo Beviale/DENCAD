@@ -17,10 +17,10 @@ import numpy as np
 
 @dataclass
 class ContextualSubgraph:
-    """One example: node features, a dense adjacency, and which row is the centre."""
+    """One example: node features, its undirected edges, and which row is the centre."""
 
     features: np.ndarray          # (m, d), the centre last
-    adjacency: np.ndarray         # (m, m), symmetric, no self-loops
+    edges: np.ndarray             # (e, 2), one row per undirected edge, no self-loops
     centre: int                   # index of the centre, always m - 1
     degrees: Optional[np.ndarray] = None
 
@@ -38,7 +38,6 @@ class ContextualSubgraphBuilder:
         self.cluster_of = np.asarray(cluster_of, dtype="int64")
         self.eps = eps
         self.max_members = max_members
-        # Keep only the nodes that can reach the centre in this many hops.
         self.max_hops = max_hops
 
         self.sq = (self.X ** 2).sum(1)
@@ -122,15 +121,15 @@ class ContextualSubgraphBuilder:
             a, b = a[both], b[both]
         else:
             a, b = iu, iv
-        big = np.zeros((k + 1, k + 1), dtype="float32")
-        big[a, b] = big[b, a] = 1.0
-        kept_attach = attach[keep].astype("float32")
-        big[k, :k] = big[:k, k] = kept_attach
+        hooked = np.flatnonzero(attach[keep])
+        pairs = np.empty((len(a) + len(hooked), 2), dtype="int32")
+        pairs[:len(a), 0], pairs[:len(a), 1] = a, b
+        pairs[len(a):, 0], pairs[len(a):, 1] = k, hooked
 
         features = np.vstack([self.X[idx[keep]],
                               vector.astype("float32")[None, :]])
         return ContextualSubgraph(
-            features=features, adjacency=big, centre=k,
+            features=features, edges=pairs, centre=k,
             degrees=(np.concatenate([degrees[keep], degrees[m:]])
                      if pruned else None))
 
