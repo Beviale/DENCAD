@@ -31,7 +31,8 @@ class ContextualSubgraphBuilder:
     def __init__(self, features: np.ndarray, cluster_of: np.ndarray,
                  edges: np.ndarray, eps: float = 1.0,
                  max_members: Optional[int] = None,
-                 max_hops: Optional[int] = None):
+                 max_hops: Optional[int] = None,
+                 node_degrees: Optional[np.ndarray] = None):
         if len(features) != len(cluster_of):
             raise ValueError("features and cluster_of disagree in length")
         self.X = np.asarray(features, dtype="float32")
@@ -39,6 +40,9 @@ class ContextualSubgraphBuilder:
         self.eps = eps
         self.max_members = max_members
         self.max_hops = max_hops
+
+        self.node_degrees = (None if node_degrees is None
+                             else np.asarray(node_degrees, dtype="float32"))
 
         self.sq = (self.X ** 2).sum(1)
         self._pos = np.full(len(self.X), -1, dtype="int64")
@@ -66,11 +70,17 @@ class ContextualSubgraphBuilder:
         d = self.sq[idx] + float(v @ v) - 2.0 * (self.X[idx] @ v)
         return np.sqrt(np.maximum(d, 0.0))
 
+    def _context(self, core: int) -> tuple[np.ndarray, np.ndarray]:
+        """Candidate members and the edges among them: the core's cluster."""
+        cluster = int(self.cluster_of[core])
+        if cluster == 0:
+            return np.array([core]), np.zeros((0, 2), dtype="int64")
+        return self.members[cluster], self.cluster_edges[cluster]
+
     def build(self, vector: np.ndarray, core: int,
               drop: Optional[int] = None) -> ContextualSubgraph:
         """The contextual subgraph of one object attached to `core`."""
-        cluster = int(self.cluster_of[core])
-        idx = np.array([core]) if cluster == 0 else self.members[cluster]
+        idx, context_edges = self._context(core)
         if drop is not None and drop in idx:
             idx = idx[idx != drop]
         gap = self._to(idx, vector)
@@ -84,17 +94,22 @@ class ContextualSubgraphBuilder:
 
         pos = self._pos
         pos[idx] = np.arange(m)
-        edges = (self.cluster_edges[cluster] if cluster != 0 and m > 1
-                 else np.zeros((0, 2), dtype="int64"))
+        edges = context_edges if m > 1 else np.zeros((0, 2), dtype="int64")
         iu, iv = pos[edges[:, 0]], pos[edges[:, 1]]
         inside = (iu >= 0) & (iv >= 0)
         iu, iv = iu[inside], iv[inside]
         pos[idx] = -1
 
         degrees = np.ones(m + 1, dtype="float32")
-        degrees[:m] += np.bincount(np.concatenate([iu, iv]),
-                                   minlength=m).astype("float32")
-        degrees[:m] += attach
+        if self.node_degrees is None:
+            degrees[:m] += np.bincount(np.concatenate([iu, iv]),
+                                       minlength=m).astype("float32")
+            degrees[:m] += attach
+        else:
+            degrees[:m] += self.node_degrees[idx]
+            if drop is None:
+    
+                degrees[:m] += attach
         degrees[m] += float(attach.sum())
 
         keep = np.arange(m)
@@ -131,7 +146,7 @@ class ContextualSubgraphBuilder:
         return ContextualSubgraph(
             features=features, edges=pairs, centre=k,
             degrees=(np.concatenate([degrees[keep], degrees[m:]])
-                     if pruned else None))
+                     if pruned or self.node_degrees is not None else None))
 
     # ----------------------------------------------------------------- datasets
 
@@ -153,9 +168,12 @@ def egos_from_rows(members, queries, eps: float,
     edges = (np.asarray(pairs, dtype="int64") if pairs
              else np.zeros((0, 2), dtype="int64"))
 
+    
+    degrees = np.fromiter((len(nb) for nb in members["_nb"]), dtype="float32",
+                          count=len(nodes))
     mini = ContextualSubgraphBuilder(
         X, np.ones(len(X), dtype="int64"), edges, eps=eps,
-        max_members=max_members, max_hops=max_hops)
+        max_members=max_members, max_hops=max_hops, node_degrees=degrees)
 
     drops = (queries["_drop"].to_numpy() if "_drop" in queries
              else np.full(len(rows), -1, dtype="int64"))
