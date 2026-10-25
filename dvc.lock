@@ -1,636 +1,3151 @@
 schema: '2.0'
 stages:
-  extract:
-    cmd: uv run python -m dencast.dataset
+  preprocess_swat:
+    cmd: python -m dencad.data.preprocess.preprocess_swat
     deps:
-    - path: data/external/pv_italy.sql
+    - path: data/raw/swat/swat.csv
       hash: md5
-      md5: ed057e0b6589567a0391faa214b4d35f
-      size: 286867364
-    - path: dencast/dataset.py
+      md5: d19fc04cf6741d584367ef38d3ff30e4
+      size: 426855390
+    - path: dencad/data/preprocess/preprocess.py
       hash: md5
-      md5: 6c0515eb2b71ab0cf705370831d754f9
-      size: 6396
-    params:
-      params.yaml:
-        dataset.date_col: data
-        dataset.feature_cols:
-        - idsito
-        - lat
-        - lon
-        - day
-        - ora
-        - temperatura_ambiente
-        - irradiamento
-        - altitude
-        - azimuth
-        - pressure
-        - windspeed
-        - humidity
-        - icon
-        - dewpoint
-        - windbearing
-        - cloudcover
-        dataset.id_col: id
-        dataset.name: pv_italy
-        dataset.source: data/external/pv_italy.sql
-        dataset.table: it_dataset_hourly_full
-        dataset.target_cols:
-        - kwh
+      md5: a63ec8f7d4a879374a8a7894971ec7c4
+      size: 6621
+    - path: dencad/data/preprocess/preprocess_swat.py
+      hash: md5
+      md5: 9cd0d4cd199a6929b0e3d89ed917a81f
+      size: 4836
     outs:
-    - path: data/raw/pv_italy.csv
+    - path: data/interim/swat/full_swat.parquet
       hash: md5
-      md5: 179e8c6766299e0fdf42ec8e751a8ef8
-      size: 67247050
-  features:
-    cmd: uv run python -m dencast.data.features
+      md5: bd25953f8f4f809708106d4f2223d04a
+      size: 23082821
+  preprocess_hai:
+    cmd: python -m dencad.data.preprocess.preprocess_hai
     deps:
-    - path: data/raw/pv_italy_inj.csv
+    - path: data/raw/hai-23.05/hai-test2.csv
       hash: md5
-      md5: cdb8a586d2c4c8b38219cbbcdd45f43c
-      size: 43139845
-    - path: dencast/data/features.py
+      md5: e62e50587f753d13d34c8edc7b31ed5a
+      size: 132946575
+    - path: data/raw/hai-23.05/hai-train1.csv
       hash: md5
-      md5: f2d02a54fa2621793679a4f4ca6579e7
-      size: 7211
-    - path: dencast/spark_session.py
+      md5: 25a63acc564d0afe843c52e2ce81d0b7
+      size: 162418984
+    - path: data/raw/hai-23.05/hai-train2.csv
       hash: md5
-      md5: b941500347f1db68d9fc8978827e0d46
-      size: 5119
-    - path: dencast/utils.py
+      md5: 5f4daf683ab1be22f46d27fb14de39a7
+      size: 169121615
+    - path: data/raw/hai-23.05/label-test2.csv
       hash: md5
-      md5: 0a73a849fb80eec247e8de75916d8278
-      size: 9756
-    params:
-      params.yaml:
-        dataset:
-          name: pv_italy_inj
-          source: data/external/pv_italy_injected.csv
-          table:
-          id_col: id
-          date_col: data
-          group_col: idsito
-          feature_cols:
-          - idsito
-          - lat
-          - lon
-          - day
-          - ora
-          - temperatura_ambiente
-          - irradiamento
-          - altitude
-          - azimuth
-          - pressure
-          - windspeed
-          - humidity
-          - icon
-          - dewpoint
-          - windbearing
-          - cloudcover
-          target_cols:
-          - kwh
-          cyclical_cols: {}
-          anomaly_col: anomaly
-          subsample_minutes:
-          scale_features: false
-        spark:
-          master: local[*]
-          driver_memory: 3g
-          num_partitions: 8
+      md5: 48246c70bd06dcd87031ae2f5dd2feb0
+      size: 4500018
+    - path: dencad/data/preprocess/preprocess.py
+      hash: md5
+      md5: a63ec8f7d4a879374a8a7894971ec7c4
+      size: 6621
+    - path: dencad/data/preprocess/preprocess_hai.py
+      hash: md5
+      md5: d89aea9b6e5aeb1e417584562cbcfd36
+      size: 4905
     outs:
-    - path: data/processed/pv_italy_inj.parquet
+    - path: data/interim/hai/full_hai.parquet
       hash: md5
-      md5: 4e69077ead4e8f8e8a94f24a560ffc47.dir
-      size: 33381785
-      nfiles: 24
-  train:
-    cmd: uv run python -m dencast.modeling.train
+      md5: b7938f2b20b0feba0ab344eeedb66a6d
+      size: 68328725
+  preprocess_esa:
+    cmd: python -m dencad.data.preprocess.preprocess_esa
     deps:
-    - path: data/processed/pv_italy.parquet
+    - path: data/raw/esa/ESA-Mission1/anomaly_types.csv
       hash: md5
-      md5: 0ecab32d3b6a5ddbb6843f8f1e4a775c.dir
-      size: 33379395
-      nfiles: 36
-    - path: dencast/clustering.py
+      md5: e1c9c4648265b0fcddb55e9c231350cf
+      size: 13299
+    - path: data/raw/esa/ESA-Mission1/channels
       hash: md5
-      md5: 2992a6676a6cd65ae2a129f75b866e90
-      size: 7914
-    - path: dencast/lsh.py
+      md5: fb2bddffd8e5eb7b04138a9eeb2f227b.dir
+      size: 3767883838
+      nfiles: 76
+    - path: data/raw/esa/ESA-Mission1/channels.csv
       hash: md5
-      md5: 721e496c6bee8c81b81ba3edaae7f63e
-      size: 10191
-    - path: dencast/modeling/train.py
+      md5: 1d2d3658867e92d0fad1f6e749dcff27
+      size: 3782
+    - path: data/raw/esa/ESA-Mission1/labels.csv
       hash: md5
-      md5: d86741c31b4467ff88e8ad21e3897ff1
-      size: 8087
-    - path: references/pv_italy_1.txt
+      md5: 94fd75857fe8fbf5b5aaae24bce22a8d
+      size: 245564
+    - path: dencad/data/preprocess/preprocess.py
       hash: md5
-      md5: d0b9ce93bf58032b8f4842575015f469
-      size: 935
-    params:
-      params.yaml:
-        clustering:
-          min_pts: 3
-          label_change_rate: 0.05
-          max_iterations: 100
-        evaluation:
-          window_size: 30
-          test_dates_file: references/pv_italy_1.txt
-          max_test_dates: 6
-          seeds:
-          - 42
-        lsh:
-          r: 5
-          num_permutations: 20
-          b: 6
-          min_sim: 0.98
-          use_targets_in_signature: true
-        mlflow:
-          experiment_name: dencast-pv-italy
-          run_name_prefix: pv_italy_st
-        spark:
-          master: local[*]
-          driver_memory: 6g
-          num_partitions: 20
+      md5: a63ec8f7d4a879374a8a7894971ec7c4
+      size: 6621
+    - path: dencad/data/preprocess/preprocess_esa.py
+      hash: md5
+      md5: 831036b36aa3c9fb8a64645c26ddeaae
+      size: 10078
     outs:
-    - path: models/pv_italy
+    - path: data/interim/esa/full_esa.parquet
       hash: md5
-      md5: 7406fc9712db3c66a7c5fe68c92cc789.dir
-      size: 1585058
-      nfiles: 125
-    - path: reports/train_metrics.json
-      hash: md5
-      md5: 5c4f39579bb186c2c0fd232cc26e57e7
-      size: 351
-  evaluate:
-    cmd: uv run python -m dencast.modeling.predict
+      md5: 681fd6fa50ebad7d9963452f37913771
+      size: 256307908
+  split_swat:
+    cmd: python -m dencad.data.split.split_swat
     deps:
-    - path: data/processed/pv_italy.parquet
+    - path: data/interim/swat/full_swat.parquet
       hash: md5
-      md5: cb7e052862293419f822158deb61c814
-      size: 33527012
-    - path: dencast/clustering.py
+      md5: bd25953f8f4f809708106d4f2223d04a
+      size: 23082821
+    - path: dencad/data/split/split.py
       hash: md5
-      md5: 5fce9ab38bbd0b7f9be43965a06452ba
-      size: 7915
-    - path: dencast/lsh.py
+      md5: a199fbcfb870e188537e75e8bc9e41a3
+      size: 6695
+    - path: dencad/data/split/split_swat.py
       hash: md5
-      md5: 961dab8af938033829ff0b09ac6e0248
-      size: 10192
-    - path: dencast/metrics.py
-      hash: md5
-      md5: d4d511383b64b15e616d4083a928c5d6
-      size: 5242
-    - path: dencast/modeling/predict.py
-      hash: md5
-      md5: 207bd3e640fd7cbbd552053e76ec28b3
-      size: 15963
-    - path: dencast/modeling/train.py
-      hash: md5
-      md5: 7d28425db5f72b55e33d5aea03001929
-      size: 8110
-    - path: references/pv_italy_1.txt
-      hash: md5
-      md5: d0b9ce93bf58032b8f4842575015f469
-      size: 935
-    params:
-      params.yaml:
-        clustering:
-          min_pts: 3
-          label_change_rate: 0.05
-          max_iterations: 100
-        evaluation:
-          window_size: 30
-          test_dates_file: references/pv_italy_1.txt
-          max_test_dates: 20
-          seeds:
-          - 42
-        lsh:
-          r: 5
-          num_permutations: 20
-          b: 6
-          min_sim: 0.98
-          use_targets_in_signature: true
-        mlflow:
-          experiment_name: dencast-pv-italy
-          run_name_prefix: pv_italy_st
-        spark:
-          master: local[*]
-          driver_memory: 6g
-          num_partitions: 8
+      md5: 78ff1b4424c77565e135e40e6c15cda3
+      size: 738
     outs:
-    - path: reports/metrics.json
+    - path: data/interim/swat/split/swat_test.parquet
       hash: md5
-      md5: bd9111f6463ade3e44c0e5548a4aebb8
-      size: 405
-    - path: reports/per_day_metrics.csv
+      md5: 27bb7e241093d7c5c910598ecddd5d1a
+      size: 5361492
+    - path: data/interim/swat/split/swat_train.parquet
       hash: md5
-      md5: 2c57d54ca9079a3c06f27cfcb5fecd24
-      size: 3678
-  extract_data:
-    cmd: uv run python -m dencast.data.extract_data
+      md5: f0f9640b20fef1fe0cc3bbb7a08e4709
+      size: 12342061
+    - path: data/interim/swat/split/swat_validation.parquet
+      hash: md5
+      md5: 187104b344bd4a0f362bee67166116af
+      size: 5588948
+  split_hai:
+    cmd: python -m dencad.data.split.split_hai
     deps:
-    - path: data/external/pv_italy_injected.csv
+    - path: data/interim/hai/full_hai.parquet
       hash: md5
-      md5: 8519430a865fcfff6a45c51782fc9b01
-      size: 43402113
-    - path: dencast/data/extract_data.py
+      md5: b7938f2b20b0feba0ab344eeedb66a6d
+      size: 68328725
+    - path: dencad/data/split/split.py
       hash: md5
-      md5: c1035c0a527001513f63a4dc834bee3f
-      size: 7841
-    - path: dencast/utils.py
+      md5: a199fbcfb870e188537e75e8bc9e41a3
+      size: 6695
+    - path: dencad/data/split/split_hai.py
       hash: md5
-      md5: 0a73a849fb80eec247e8de75916d8278
-      size: 9756
-    params:
-      params.yaml:
-        dataset.anomaly_col: anomaly
-        dataset.date_col: data
-        dataset.feature_cols:
-        - idsito
-        - lat
-        - lon
-        - day
-        - ora
-        - temperatura_ambiente
-        - irradiamento
-        - altitude
-        - azimuth
-        - pressure
-        - windspeed
-        - humidity
-        - icon
-        - dewpoint
-        - windbearing
-        - cloudcover
-        dataset.group_col: idsito
-        dataset.id_col: id
-        dataset.name: pv_italy_inj
-        dataset.source: data/external/pv_italy_injected.csv
-        dataset.table:
-        dataset.target_cols:
-        - kwh
+      md5: 39dbcdaa429ed6da50df427629da32fe
+      size: 829
     outs:
-    - path: data/raw/pv_italy_inj.csv
+    - path: data/interim/hai/split/hai_test.parquet
       hash: md5
-      md5: cdb8a586d2c4c8b38219cbbcdd45f43c
-      size: 43139845
-  calibrate:
-    cmd: uv run python -m dencast.modeling.calibrate
+      md5: bf87d8242206165578d03a3c8bcc5d1d
+      size: 11222274
+    - path: data/interim/hai/split/hai_train.parquet
+      hash: md5
+      md5: 3295c39475253d50874d2dcf28bc21e1
+      size: 49646287
+    - path: data/interim/hai/split/hai_validation.parquet
+      hash: md5
+      md5: 4b58a34b7d5bc1b8387794d69a18ff2a
+      size: 11060914
+  split_esa:
+    cmd: python -m dencad.data.split.split_esa
     deps:
-    - path: data/processed/pv_italy.parquet
+    - path: data/interim/esa/full_esa.parquet
       hash: md5
-      md5: cb7e052862293419f822158deb61c814
-      size: 33527012
-    - path: dencast/calibration.py
+      md5: 681fd6fa50ebad7d9963452f37913771
+      size: 256307908
+    - path: dencad/data/split/split.py
       hash: md5
-      md5: 7b4540f8370a53e9c2701b801fb02524
-      size: 11988
-    - path: dencast/clustering.py
+      md5: a199fbcfb870e188537e75e8bc9e41a3
+      size: 6695
+    - path: dencad/data/split/split_esa.py
       hash: md5
-      md5: 5fce9ab38bbd0b7f9be43965a06452ba
-      size: 7915
-    - path: dencast/lsh.py
-      hash: md5
-      md5: 961dab8af938033829ff0b09ac6e0248
-      size: 10192
-    - path: dencast/modeling/calibrate.py
-      hash: md5
-      md5: f893a5ff174362d3b714b40d510c4466
-      size: 5767
-    - path: dencast/modeling/predict.py
-      hash: md5
-      md5: 9370b90ac18b72b06ce0ba6a4d9c56ae
-      size: 16639
-    - path: dencast/modeling/train.py
-      hash: md5
-      md5: 744b79e204c3640a07f45100f11c679f
-      size: 7876
-    - path: references/pv_italy_1.txt
-      hash: md5
-      md5: d0b9ce93bf58032b8f4842575015f469
-      size: 935
-    params:
-      params.yaml:
-        clustering:
-          min_pts: 3
-          label_change_rate: 0.05
-          max_iterations: 100
-        evaluation:
-          window_size: 30
-          test_dates_file: references/pv_italy_1.txt
-          max_test_dates: 6
-          seeds:
-          - 42
-        lsh:
-          r: 5
-          num_permutations: 20
-          b: 6
-          min_sim: 0.98
-          use_targets_in_signature: true
-        mlflow:
-          experiment_name: dencast-pv-italy
-          run_name_prefix: pv_italy_st
-        spark:
-          master: local[*]
-          driver_memory: 6g
-          num_partitions: 8
+      md5: 3f6ab5776fbfe92e71d85598fcfce41a
+      size: 1194
     outs:
-    - path: models/calibration/pv_italy.json
+    - path: data/interim/esa/split/esa_test.parquet
       hash: md5
-      md5: 9c9c8b31067e10fe4633ea1dddbec11c
-      size: 673
-    - path: reports/calibration.json
+      md5: 9c68e207d524c83e0da10fee0192d6ed
+      size: 39690914
+    - path: data/interim/esa/split/esa_train.parquet
       hash: md5
-      md5: 14cdda10c7b0ea15182c5342951f2187
-      size: 1038
-  score:
-    cmd: uv run python -m dencast.modeling.score
+      md5: 20c0b12f594c6ea6c2727428a577d525
+      size: 182129765
+    - path: data/interim/esa/split/esa_validation.parquet
+      hash: md5
+      md5: c2ab8ffc9e7856a242a97c3e6cae317d
+      size: 39738253
+  process_swat:
+    cmd: python -m dencad.data.process.process_swat
     deps:
-    - path: data/processed/pv_italy.parquet
+    - path: data/interim/swat/split/swat_test.parquet
       hash: md5
-      md5: cb7e052862293419f822158deb61c814
-      size: 33527012
-    - path: dencast/anomaly.py
+      md5: 27bb7e241093d7c5c910598ecddd5d1a
+      size: 5361492
+    - path: data/interim/swat/split/swat_train.parquet
       hash: md5
-      md5: a8421a7eedb301617e6d5bca6cd2e604
-      size: 13629
-    - path: dencast/calibration.py
+      md5: f0f9640b20fef1fe0cc3bbb7a08e4709
+      size: 12342061
+    - path: data/interim/swat/split/swat_validation.parquet
       hash: md5
-      md5: 7b4540f8370a53e9c2701b801fb02524
-      size: 11988
-    - path: dencast/loo.py
+      md5: 187104b344bd4a0f362bee67166116af
+      size: 5588948
+    - path: data/raw/categorical_columns.yaml
       hash: md5
-      md5: bc90198003245b78f93611baf7c4e79c
-      size: 4887
-    - path: dencast/modeling/predict.py
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: dencad/data/process/process.py
       hash: md5
-      md5: 9370b90ac18b72b06ce0ba6a4d9c56ae
-      size: 16639
-    - path: dencast/modeling/score.py
+      md5: 3ad6693cb691dda6c8bed5a0e4270456
+      size: 13225
+    - path: dencad/data/process/process_swat.py
       hash: md5
-      md5: 4e5345f79feaf84de465651c76a6f2dd
-      size: 6820
-    - path: dencast/modeling/train.py
+      md5: 1b8bb1fa8bddbdfb82b48b563f7c52a3
+      size: 917
+    - path: dencad/utils.py
       hash: md5
-      md5: 744b79e204c3640a07f45100f11c679f
-      size: 7876
-    - path: models/calibration/pv_italy.json
-      hash: md5
-      md5: 9c9c8b31067e10fe4633ea1dddbec11c
-      size: 673
-    - path: references/pv_italy_1.txt
-      hash: md5
-      md5: d0b9ce93bf58032b8f4842575015f469
-      size: 935
-    params:
-      params.yaml:
-        clustering:
-          min_pts: 3
-          label_change_rate: 0.05
-          max_iterations: 100
-        evaluation:
-          window_size: 30
-          test_dates_file: references/pv_italy_1.txt
-          max_test_dates: 6
-          seeds:
-          - 42
-        lsh:
-          r: 5
-          num_permutations: 20
-          b: 6
-          min_sim: 0.98
-          use_targets_in_signature: true
-        mlflow:
-          experiment_name: dencast-pv-italy
-          run_name_prefix: pv_italy_st
-        spark:
-          master: local[*]
-          driver_memory: 6g
-          num_partitions: 8
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
     outs:
-    - path: reports/anomaly_scores.csv
+    - path: data/processed/swat/swat_test.parquet
       hash: md5
-      md5: 6846f4f8b6bbce0b9cc17da575dedcb8
-      size: 291577
-    - path: reports/anomaly_summary.json
+      md5: adee6ed0920df6e3caf28da5be08ba46
+      size: 4942526
+    - path: data/processed/swat/swat_train.parquet
       hash: md5
-      md5: b3ef5949cd00422b3ef9fc2b02c2863c
-      size: 298
-  split_dataset:
-    cmd: uv run python -m dencast.data.split_dataset
+      md5: 7a2d5756e4f5be9d1cc5a2bd9db734b7
+      size: 11297385
+    - path: data/processed/swat/swat_validation.parquet
+      hash: md5
+      md5: a931e899ac5efbe8fb5775eefa0eae60
+      size: 5093051
+  process_hai:
+    cmd: python -m dencad.data.process.process_hai
     deps:
-    - path: data/processed/pv_italy.parquet
+    - path: data/interim/hai/split/hai_test.parquet
       hash: md5
-      md5: d05e1f980bac8a0b095f7037b589f69d.dir
-      size: 33379395
-      nfiles: 36
-    - path: dencast/data/split_dataset.py
+      md5: bf87d8242206165578d03a3c8bcc5d1d
+      size: 11222274
+    - path: data/interim/hai/split/hai_train.parquet
       hash: md5
-      md5: 0e7bf451c2af402dda012f0f95a906d9
-      size: 4689
-    - path: dencast/split.py
+      md5: 3295c39475253d50874d2dcf28bc21e1
+      size: 49646287
+    - path: data/interim/hai/split/hai_validation.parquet
       hash: md5
-      md5: 810e78c695897dbfe2c8add57188bd2a
-      size: 5871
-    - path: dencast/utils.py
+      md5: 4b58a34b7d5bc1b8387794d69a18ff2a
+      size: 11060914
+    - path: data/raw/categorical_columns.yaml
       hash: md5
-      md5: 0a73a849fb80eec247e8de75916d8278
-      size: 9756
-    params:
-      params.yaml:
-        dataset.anomaly_col:
-        spark:
-          master: local[*]
-          driver_memory: 6g
-          num_partitions: 20
-        split:
-          train_fraction: 0.7
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: dencad/data/process/process.py
+      hash: md5
+      md5: 3ad6693cb691dda6c8bed5a0e4270456
+      size: 13225
+    - path: dencad/data/process/process_hai.py
+      hash: md5
+      md5: c5da0bf69edad8c63e52498ff35d9549
+      size: 913
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
     outs:
-    - path: data/processed/pv_italy_test.parquet
+    - path: data/processed/hai/hai_test.parquet
       hash: md5
-      md5: b3f4f5d7c06b3a3d6d6e7257a1617efa.dir
-      size: 8918218
-      nfiles: 36
-    - path: data/processed/pv_italy_train.parquet
+      md5: c940cdda44098c14330815fd9c36b7ec
+      size: 10024509
+    - path: data/processed/hai/hai_train.parquet
       hash: md5
-      md5: 0e3843c1832e88d4512e64eb4bae6a77.dir
-      size: 24486322
-      nfiles: 36
-    - path: reports/split.json
+      md5: 69d811c730dd76ec06a2e25d982163f3
+      size: 44189475
+    - path: data/processed/hai/hai_validation.parquet
       hash: md5
-      md5: d7d873b61763e7713f730e71a6b1b477
-      size: 386
-  train_and_select:
-    cmd: uv run python -m dencast.modeling.train_and_select
+      md5: bd54d4f254f52de938c54a58c00df27b
+      size: 9887711
+  search_dencad_swat:
+    cmd: python -m dencad.modeling.search --split_dir data/processed/swat 
+      --model dencad --runs 15
     deps:
-    - path: data/processed/pv_italy_train.parquet
+    - path: data/processed/swat/swat_train.parquet
       hash: md5
-      md5: 05a696dc00de6839e87ac939db2072e3.dir
-      size: 24486322
-      nfiles: 36
-    - path: dencast/clustering.py
+      md5: 7a2d5756e4f5be9d1cc5a2bd9db734b7
+      size: 11297385
+    - path: data/processed/swat/swat_validation.parquet
       hash: md5
-      md5: 2992a6676a6cd65ae2a129f75b866e90
-      size: 7914
-    - path: dencast/lsh.py
+      md5: a931e899ac5efbe8fb5775eefa0eae60
+      size: 5093051
+    - path: data/raw/categorical_columns.yaml
       hash: md5
-      md5: 721e496c6bee8c81b81ba3edaae7f63e
-      size: 10191
-    - path: dencast/metrics.py
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: dencad/modeling/clustering.py
       hash: md5
-      md5: c5ec50694c578dac159040043afd9037
-      size: 10023
-    - path: dencast/modeling/fit.py
+      md5: e064bf7f3c7077ed02c5134938325a47
+      size: 4797
+    - path: dencad/modeling/evaluate.py
       hash: md5
-      md5: d4a863e77761e827c2f04a96bd17fb23
-      size: 5083
-    - path: dencast/modeling/predict.py
+      md5: 195c2dc80d02aed0d4d180c21e93e4fa
+      size: 3304
+    - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 93e1c926ed4ec0f7fb34860dd4a37d47
-      size: 9027
-    - path: dencast/modeling/train_and_select.py
+      md5: c3aa7c23541b624aeb7bda5cf72bdc03
+      size: 6576
+    - path: dencad/modeling/parallel.py
       hash: md5
-      md5: 8c91946c77805b025382a62d43e1312b
-      size: 12378
-    - path: dencast/split.py
+      md5: 057cefb1b7daa00da203cbc7f8d27e3f
+      size: 8903
+    - path: dencad/modeling/placement.py
       hash: md5
-      md5: 810e78c695897dbfe2c8add57188bd2a
-      size: 5871
-    - path: dencast/utils.py
+      md5: 3ff5e4dff923a5ba42892d34d1bc639b
+      size: 4400
+    - path: dencad/modeling/search.py
       hash: md5
-      md5: 0a73a849fb80eec247e8de75916d8278
-      size: 9756
+      md5: 7953072810994080c85c60f27442e1d2
+      size: 5433
+    - path: dencad/modeling/shards.py
+      hash: md5
+      md5: 3ea94fae518661be097815669ebf14f8
+      size: 8975
+    - path: dencad/modeling/subgraphs.py
+      hash: md5
+      md5: 4b7e00b6a9dc13702e58d596856702fe
+      size: 7256
+    - path: dencad/modeling/train_dencad.py
+      hash: md5
+      md5: b2a641356ccb16982ffd8308aa52297b
+      size: 22189
+    - path: dencad/modeling/windowing.py
+      hash: md5
+      md5: c26686c63f6d9221277a9f5ad0e772e5
+      size: 16510
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
     params:
       params.yaml:
-        clustering:
-          min_pts: 3
-          label_change_rate: 0.05
-          max_iterations: 100
-        evaluation:
-          window_size: 30
-          seeds:
-          - 42
-          n_calibration_days: 5
-        lsh:
-          r: 5
-          num_permutations: 20
-          b: 6
-          min_sim: 0.98
-          use_targets_in_signature: true
-        mlflow:
-          experiment_name: dencast-pv-italy
-          run_name_prefix: pv_italy_repro
-        selection:
-          n_days: 10
+        data:
+          window_steps:
+            swat: 60
+            hai: 30
+            esa: 132
+          eps: &id001
+            swat:
+            - 1.05
+            - 1.2
+            hai:
+            - 5.8
+            - 6.1
+            esa_rare_anomalies:
+            - 6.28
+            - 6.53
+            esa_anomalies:
+            - 5.11
+            - 5.37
+            esa_rare_anomalies_contaminated:
+            - 3.1
+            - 3.26
+            esa_anomalies_contaminated:
+            - 3.1
+            - 3.26
+          scale_windows: true
           seed: 42
-          metric: rmse_avg
-          grid: {}
-        spark:
-          master: local[*]
-          driver_memory: 6g
-          num_partitions: 20
+          workers: 4
+        dencad:
+          contaminated_refit: false
+          min_coverage: 0.5
+          max_epochs: 200
+          attach_to: clustered
+          mask_centre: false
+          replicas: 4
+          scale_learning_rate: true
+          grid:
+            bits:
+            - 16
+            - 24
+            permutations:
+            - 10
+            - 20
+            band:
+            - 20
+            - 50
+            eps: *id001
+            width_factor:
+            - 1.0
+            - 2.0
+            min_pts:
+            - 10
+            - 5
+            label_change_rate:
+            - 0.05
+            max_members:
+              swat:
+              - 500
+              hai:
+              - 500
+              esa:
+              - 150
+            hidden:
+            - 64
+            - 128
+            latent:
+            - 16
+            - 32
+            layers:
+            - 2
+            - 3
+            learning_rate:
+            - 0.001
+            - 0.003
+            batch_size:
+            - 128
+            patience:
+            - 20
+        k_sigma:
+        - 0.5
+        - 0.75
+        - 1.0
+        - 1.25
+        - 1.5
+        - 2.0
+        - 2.5
+        - 3.0
+        - 3.5
+        - 4.0
     outs:
-    - path: models/selection/pv_italy.json
+    - path: reports/search_dencad_swat.json
       hash: md5
-      md5: 08959ba87420c142286522353fa901c7
-      size: 414
-    - path: reports/selection.json
-      hash: md5
-      md5: fcec8e55cd6b40b5f141b88796a0a333
-      size: 168
-    - path: reports/selection_grid.csv
-      hash: md5
-      md5: aceaa273c1fd5f5999b84816aa552963
-      size: 1542
-  train_winner:
-    cmd: uv run python -m dencast.modeling.train_winner
+      md5: ca7f53f76f08ae723a93e507dde4c732
+      size: 11254
+  dencad_swat:
+    cmd: python -m dencad.modeling.train_dencad --split_dir data/processed/swat 
+      --stage final --selected reports/search_dencad_swat.json
     deps:
-    - path: data/processed/care_a_test.parquet
+    - path: data/processed/swat/swat_test.parquet
       hash: md5
-      md5: b877abe29c73d8bada0010044b82ef35.dir
-      size: 14263002
-      nfiles: 10
-    - path: data/processed/care_a_train.parquet
+      md5: adee6ed0920df6e3caf28da5be08ba46
+      size: 4942526
+    - path: data/processed/swat/swat_train.parquet
       hash: md5
-      md5: acca46d7d011a5f5f2c23776c9d33298.dir
-      size: 12224626
-      nfiles: 8
-    - path: dencast/calibration.py
+      md5: 7a2d5756e4f5be9d1cc5a2bd9db734b7
+      size: 11297385
+    - path: data/processed/swat/swat_validation.parquet
       hash: md5
-      md5: 0142be5c652b1a48e5c1ec40c0c5006d
-      size: 12291
-    - path: dencast/clustering.py
+      md5: a931e899ac5efbe8fb5775eefa0eae60
+      size: 5093051
+    - path: data/raw/categorical_columns.yaml
       hash: md5
-      md5: 2992a6676a6cd65ae2a129f75b866e90
-      size: 7914
-    - path: dencast/lsh.py
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: dencad/modeling/clustering.py
       hash: md5
-      md5: 721e496c6bee8c81b81ba3edaae7f63e
-      size: 10191
-    - path: dencast/metrics.py
+      md5: e064bf7f3c7077ed02c5134938325a47
+      size: 4797
+    - path: dencad/modeling/evaluate.py
       hash: md5
-      md5: c5ec50694c578dac159040043afd9037
-      size: 10023
-    - path: dencast/modeling/fit.py
+      md5: 195c2dc80d02aed0d4d180c21e93e4fa
+      size: 3304
+    - path: dencad/modeling/lsh.py
       hash: md5
-      md5: d4a863e77761e827c2f04a96bd17fb23
-      size: 5083
-    - path: dencast/modeling/predict.py
+      md5: c3aa7c23541b624aeb7bda5cf72bdc03
+      size: 6576
+    - path: dencad/modeling/parallel.py
       hash: md5
-      md5: 93e1c926ed4ec0f7fb34860dd4a37d47
-      size: 9027
-    - path: dencast/modeling/train_winner.py
+      md5: 057cefb1b7daa00da203cbc7f8d27e3f
+      size: 8903
+    - path: dencad/modeling/placement.py
       hash: md5
-      md5: 212111d726a54c4ebffbd40990a2559b
-      size: 8927
-    - path: dencast/split.py
+      md5: 3ff5e4dff923a5ba42892d34d1bc639b
+      size: 4400
+    - path: dencad/modeling/shards.py
       hash: md5
-      md5: 810e78c695897dbfe2c8add57188bd2a
-      size: 5871
-    - path: dencast/utils.py
+      md5: 3ea94fae518661be097815669ebf14f8
+      size: 8975
+    - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: 0a73a849fb80eec247e8de75916d8278
-      size: 9756
-    - path: models/selection/care_a.json
+      md5: 4b7e00b6a9dc13702e58d596856702fe
+      size: 7256
+    - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 6cda75b26c2e9b441b78cc40b80f902b
-      size: 445
+      md5: b2a641356ccb16982ffd8308aa52297b
+      size: 22189
+    - path: dencad/modeling/windowing.py
+      hash: md5
+      md5: c26686c63f6d9221277a9f5ad0e772e5
+      size: 16510
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    - path: reports/search_dencad_swat.json
+      hash: md5
+      md5: ca7f53f76f08ae723a93e507dde4c732
+      size: 11254
     params:
       params.yaml:
-        clustering:
-          min_pts: 3
-          label_change_rate: 0.05
-          max_iterations: 100
-        evaluation:
-          window_size: 30
-          seeds:
-          - 42
-          n_calibration_days: 5
-        lsh:
-          r: 5
-          num_permutations: 20
-          b: 6
-          min_sim: 0.98
-          use_targets_in_signature: true
-        mlflow:
-          experiment_name: dencast-care-wind
-          run_name_prefix: care_a
-        spark:
-          master: local[*]
-          driver_memory: 6g
-          num_partitions: 20
+        data:
+          window_steps:
+            swat: 60
+            hai: 30
+            esa: 132
+          eps: &id002
+            swat:
+            - 1.05
+            - 1.2
+            hai:
+            - 5.8
+            - 6.1
+            esa_rare_anomalies:
+            - 6.28
+            - 6.53
+            esa_anomalies:
+            - 5.11
+            - 5.37
+            esa_rare_anomalies_contaminated:
+            - 3.1
+            - 3.26
+            esa_anomalies_contaminated:
+            - 3.1
+            - 3.26
+          scale_windows: true
+          seed: 42
+          workers: 4
+        dencad:
+          contaminated_refit: false
+          min_coverage: 0.5
+          max_epochs: 200
+          attach_to: clustered
+          mask_centre: false
+          replicas: 4
+          scale_learning_rate: true
+          grid:
+            bits:
+            - 16
+            - 24
+            permutations:
+            - 10
+            - 20
+            band:
+            - 20
+            - 50
+            eps: *id002
+            width_factor:
+            - 1.0
+            - 2.0
+            min_pts:
+            - 10
+            - 5
+            label_change_rate:
+            - 0.05
+            max_members:
+              swat:
+              - 500
+              hai:
+              - 500
+              esa:
+              - 150
+            hidden:
+            - 64
+            - 128
+            latent:
+            - 16
+            - 32
+            layers:
+            - 2
+            - 3
+            learning_rate:
+            - 0.001
+            - 0.003
+            batch_size:
+            - 128
+            patience:
+            - 20
+        k_sigma:
+        - 0.5
+        - 0.75
+        - 1.0
+        - 1.25
+        - 1.5
+        - 2.0
+        - 2.5
+        - 3.0
+        - 3.5
+        - 4.0
     outs:
-    - path: models/calibration/care_a.json
+    - path: reports/dencad_swat_60steps_final.json
       hash: md5
-      md5: 55783e142eacd093605a9da5f8b3d726
-      size: 669
-    - path: models/care_a
+      md5: 4d5c297fee88580bc1e08cf34d698b46
+      size: 1864
+  search_plain_swat:
+    cmd: python -m dencad.modeling.search --split_dir data/processed/swat 
+      --model plain --runs 16
+    deps:
+    - path: data/processed/swat/swat_train.parquet
       hash: md5
-      md5: 81e3b9438d84167dc862d031925edc13.dir
-      size: 13059325
-      nfiles: 125
-    - path: reports/test_metrics.json
+      md5: 7a2d5756e4f5be9d1cc5a2bd9db734b7
+      size: 11297385
+    - path: data/processed/swat/swat_validation.parquet
       hash: md5
-      md5: 92b3d5c03cfa5cb877d02e8957b0cda8
-      size: 728
+      md5: a931e899ac5efbe8fb5775eefa0eae60
+      size: 5093051
+    - path: data/raw/categorical_columns.yaml
+      hash: md5
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: dencad/modeling/evaluate.py
+      hash: md5
+      md5: 195c2dc80d02aed0d4d180c21e93e4fa
+      size: 3304
+    - path: dencad/modeling/search.py
+      hash: md5
+      md5: 7953072810994080c85c60f27442e1d2
+      size: 5433
+    - path: dencad/modeling/subgraphs.py
+      hash: md5
+      md5: 4b7e00b6a9dc13702e58d596856702fe
+      size: 7256
+    - path: dencad/modeling/train_dencad.py
+      hash: md5
+      md5: b2a641356ccb16982ffd8308aa52297b
+      size: 22189
+    - path: dencad/modeling/train_plain.py
+      hash: md5
+      md5: a1eebb09ffc26d94722e2d4907734e25
+      size: 10301
+    - path: dencad/modeling/windowing.py
+      hash: md5
+      md5: c26686c63f6d9221277a9f5ad0e772e5
+      size: 16510
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    params:
+      params.yaml:
+        data:
+          window_steps:
+            swat: 60
+            hai: 30
+            esa: 132
+          eps:
+            swat:
+            - 1.05
+            - 1.2
+            hai:
+            - 5.8
+            - 6.1
+            esa_rare_anomalies:
+            - 6.28
+            - 6.53
+            esa_anomalies:
+            - 5.11
+            - 5.37
+            esa_rare_anomalies_contaminated:
+            - 3.1
+            - 3.26
+            esa_anomalies_contaminated:
+            - 3.1
+            - 3.26
+          scale_windows: true
+          seed: 42
+          workers: 4
+        k_sigma:
+        - 0.5
+        - 0.75
+        - 1.0
+        - 1.25
+        - 1.5
+        - 2.0
+        - 2.5
+        - 3.0
+        - 3.5
+        - 4.0
+        plain:
+          contaminated_refit: false
+          min_coverage: 0.5
+          max_epochs: 200
+          grid:
+            hidden:
+            - 64
+            - 128
+            latent:
+            - 16
+            - 32
+            layers:
+            - 2
+            - 3
+            learning_rate:
+            - 0.001
+            - 0.003
+            batch_size:
+            - 128
+            patience:
+            - 20
+    outs:
+    - path: reports/search_plain_swat.json
+      hash: md5
+      md5: aaab98a984e2b888cf887cdb78c442e2
+      size: 8458
+  plain_swat:
+    cmd: python -m dencad.modeling.train_plain --split_dir data/processed/swat 
+      --stage final --selected reports/search_plain_swat.json
+    deps:
+    - path: data/processed/swat/swat_test.parquet
+      hash: md5
+      md5: adee6ed0920df6e3caf28da5be08ba46
+      size: 4942526
+    - path: data/processed/swat/swat_train.parquet
+      hash: md5
+      md5: 7a2d5756e4f5be9d1cc5a2bd9db734b7
+      size: 11297385
+    - path: data/processed/swat/swat_validation.parquet
+      hash: md5
+      md5: a931e899ac5efbe8fb5775eefa0eae60
+      size: 5093051
+    - path: data/raw/categorical_columns.yaml
+      hash: md5
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: dencad/modeling/evaluate.py
+      hash: md5
+      md5: 195c2dc80d02aed0d4d180c21e93e4fa
+      size: 3304
+    - path: dencad/modeling/subgraphs.py
+      hash: md5
+      md5: 4b7e00b6a9dc13702e58d596856702fe
+      size: 7256
+    - path: dencad/modeling/train_dencad.py
+      hash: md5
+      md5: b2a641356ccb16982ffd8308aa52297b
+      size: 22189
+    - path: dencad/modeling/train_plain.py
+      hash: md5
+      md5: a1eebb09ffc26d94722e2d4907734e25
+      size: 10301
+    - path: dencad/modeling/windowing.py
+      hash: md5
+      md5: c26686c63f6d9221277a9f5ad0e772e5
+      size: 16510
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    - path: reports/search_plain_swat.json
+      hash: md5
+      md5: aaab98a984e2b888cf887cdb78c442e2
+      size: 8458
+    params:
+      params.yaml:
+        data:
+          window_steps:
+            swat: 60
+            hai: 30
+            esa: 132
+          eps:
+            swat:
+            - 1.05
+            - 1.2
+            hai:
+            - 5.8
+            - 6.1
+            esa_rare_anomalies:
+            - 6.28
+            - 6.53
+            esa_anomalies:
+            - 5.11
+            - 5.37
+            esa_rare_anomalies_contaminated:
+            - 3.1
+            - 3.26
+            esa_anomalies_contaminated:
+            - 3.1
+            - 3.26
+          scale_windows: true
+          seed: 42
+          workers: 4
+        k_sigma:
+        - 0.5
+        - 0.75
+        - 1.0
+        - 1.25
+        - 1.5
+        - 2.0
+        - 2.5
+        - 3.0
+        - 3.5
+        - 4.0
+        plain:
+          contaminated_refit: false
+          min_coverage: 0.5
+          max_epochs: 200
+          grid:
+            hidden:
+            - 64
+            - 128
+            latent:
+            - 16
+            - 32
+            layers:
+            - 2
+            - 3
+            learning_rate:
+            - 0.001
+            - 0.003
+            batch_size:
+            - 128
+            patience:
+            - 20
+    outs:
+    - path: reports/plain_swat_60steps_final.json
+      hash: md5
+      md5: 47dfbf0c4d57905f9f38d7c07e6ddb9b
+      size: 1602
+  search_sigma_swat:
+    cmd: python -m dencad.modeling.search --split_dir data/processed/swat 
+      --model sigma --runs 15
+    deps:
+    - path: data/processed/swat/swat_train.parquet
+      hash: md5
+      md5: 7a2d5756e4f5be9d1cc5a2bd9db734b7
+      size: 11297385
+    - path: data/processed/swat/swat_validation.parquet
+      hash: md5
+      md5: a931e899ac5efbe8fb5775eefa0eae60
+      size: 5093051
+    - path: data/raw/categorical_columns.yaml
+      hash: md5
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: dencad/modeling/clustering.py
+      hash: md5
+      md5: e064bf7f3c7077ed02c5134938325a47
+      size: 4797
+    - path: dencad/modeling/evaluate.py
+      hash: md5
+      md5: 195c2dc80d02aed0d4d180c21e93e4fa
+      size: 3304
+    - path: dencad/modeling/lsh.py
+      hash: md5
+      md5: c3aa7c23541b624aeb7bda5cf72bdc03
+      size: 6576
+    - path: dencad/modeling/parallel.py
+      hash: md5
+      md5: 057cefb1b7daa00da203cbc7f8d27e3f
+      size: 8903
+    - path: dencad/modeling/placement.py
+      hash: md5
+      md5: 3ff5e4dff923a5ba42892d34d1bc639b
+      size: 4400
+    - path: dencad/modeling/search.py
+      hash: md5
+      md5: 7953072810994080c85c60f27442e1d2
+      size: 5433
+    - path: dencad/modeling/shards.py
+      hash: md5
+      md5: 3ea94fae518661be097815669ebf14f8
+      size: 8975
+    - path: dencad/modeling/subgraphs.py
+      hash: md5
+      md5: 4b7e00b6a9dc13702e58d596856702fe
+      size: 7256
+    - path: dencad/modeling/train_dencad.py
+      hash: md5
+      md5: b2a641356ccb16982ffd8308aa52297b
+      size: 22189
+    - path: dencad/modeling/train_sigma.py
+      hash: md5
+      md5: 05971f72f1f42267ced0e77a1e6d0fd9
+      size: 8698
+    - path: dencad/modeling/windowing.py
+      hash: md5
+      md5: c26686c63f6d9221277a9f5ad0e772e5
+      size: 16510
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    params:
+      params.yaml:
+        data:
+          window_steps:
+            swat: 60
+            hai: 30
+            esa: 132
+          eps: &id003
+            swat:
+            - 1.05
+            - 1.2
+            hai:
+            - 5.8
+            - 6.1
+            esa_rare_anomalies:
+            - 6.28
+            - 6.53
+            esa_anomalies:
+            - 5.11
+            - 5.37
+            esa_rare_anomalies_contaminated:
+            - 3.1
+            - 3.26
+            esa_anomalies_contaminated:
+            - 3.1
+            - 3.26
+          scale_windows: true
+          seed: 42
+          workers: 4
+        k_sigma:
+        - 0.5
+        - 0.75
+        - 1.0
+        - 1.25
+        - 1.5
+        - 2.0
+        - 2.5
+        - 3.0
+        - 3.5
+        - 4.0
+        sigma:
+          contaminated_refit: false
+          min_coverage: 0.5
+          attach_to: clustered
+          grid:
+            bits:
+            - 16
+            - 24
+            permutations:
+            - 10
+            - 20
+            band:
+            - 20
+            - 50
+            eps: *id003
+            width_factor:
+            - 1.0
+            - 2.0
+            min_pts:
+            - 10
+            - 5
+            label_change_rate:
+            - 0.05
+    outs:
+    - path: reports/search_sigma_swat.json
+      hash: md5
+      md5: 865f0bbfc5214a965f40104a92da8b73
+      size: 8532
+  sigma_swat:
+    cmd: python -m dencad.modeling.train_sigma --split_dir data/processed/swat 
+      --stage final --selected reports/search_sigma_swat.json
+    deps:
+    - path: data/processed/swat/swat_test.parquet
+      hash: md5
+      md5: adee6ed0920df6e3caf28da5be08ba46
+      size: 4942526
+    - path: data/processed/swat/swat_train.parquet
+      hash: md5
+      md5: 7a2d5756e4f5be9d1cc5a2bd9db734b7
+      size: 11297385
+    - path: data/processed/swat/swat_validation.parquet
+      hash: md5
+      md5: a931e899ac5efbe8fb5775eefa0eae60
+      size: 5093051
+    - path: data/raw/categorical_columns.yaml
+      hash: md5
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: dencad/modeling/clustering.py
+      hash: md5
+      md5: e064bf7f3c7077ed02c5134938325a47
+      size: 4797
+    - path: dencad/modeling/evaluate.py
+      hash: md5
+      md5: 195c2dc80d02aed0d4d180c21e93e4fa
+      size: 3304
+    - path: dencad/modeling/lsh.py
+      hash: md5
+      md5: c3aa7c23541b624aeb7bda5cf72bdc03
+      size: 6576
+    - path: dencad/modeling/parallel.py
+      hash: md5
+      md5: 057cefb1b7daa00da203cbc7f8d27e3f
+      size: 8903
+    - path: dencad/modeling/placement.py
+      hash: md5
+      md5: 3ff5e4dff923a5ba42892d34d1bc639b
+      size: 4400
+    - path: dencad/modeling/shards.py
+      hash: md5
+      md5: 3ea94fae518661be097815669ebf14f8
+      size: 8975
+    - path: dencad/modeling/subgraphs.py
+      hash: md5
+      md5: 4b7e00b6a9dc13702e58d596856702fe
+      size: 7256
+    - path: dencad/modeling/train_dencad.py
+      hash: md5
+      md5: b2a641356ccb16982ffd8308aa52297b
+      size: 22189
+    - path: dencad/modeling/train_sigma.py
+      hash: md5
+      md5: 05971f72f1f42267ced0e77a1e6d0fd9
+      size: 8698
+    - path: dencad/modeling/windowing.py
+      hash: md5
+      md5: c26686c63f6d9221277a9f5ad0e772e5
+      size: 16510
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    - path: reports/search_sigma_swat.json
+      hash: md5
+      md5: 865f0bbfc5214a965f40104a92da8b73
+      size: 8532
+    params:
+      params.yaml:
+        data:
+          window_steps:
+            swat: 60
+            hai: 30
+            esa: 132
+          eps: &id004
+            swat:
+            - 1.05
+            - 1.2
+            hai:
+            - 5.8
+            - 6.1
+            esa_rare_anomalies:
+            - 6.28
+            - 6.53
+            esa_anomalies:
+            - 5.11
+            - 5.37
+            esa_rare_anomalies_contaminated:
+            - 3.1
+            - 3.26
+            esa_anomalies_contaminated:
+            - 3.1
+            - 3.26
+          scale_windows: true
+          seed: 42
+          workers: 4
+        k_sigma:
+        - 0.5
+        - 0.75
+        - 1.0
+        - 1.25
+        - 1.5
+        - 2.0
+        - 2.5
+        - 3.0
+        - 3.5
+        - 4.0
+        sigma:
+          contaminated_refit: false
+          min_coverage: 0.5
+          attach_to: clustered
+          grid:
+            bits:
+            - 16
+            - 24
+            permutations:
+            - 10
+            - 20
+            band:
+            - 20
+            - 50
+            eps: *id004
+            width_factor:
+            - 1.0
+            - 2.0
+            min_pts:
+            - 10
+            - 5
+            label_change_rate:
+            - 0.05
+    outs:
+    - path: reports/sigma_swat_60steps_final.json
+      hash: md5
+      md5: 88fe65d8c2a4053f57c75ecfa3f5b50d
+      size: 1670
+  kmeans_swat:
+    cmd: python -m dencad.modeling.train_k_means --split_dir data/processed/swat
+    deps:
+    - path: data/processed/swat/swat_test.parquet
+      hash: md5
+      md5: adee6ed0920df6e3caf28da5be08ba46
+      size: 4942526
+    - path: data/processed/swat/swat_train.parquet
+      hash: md5
+      md5: 7a2d5756e4f5be9d1cc5a2bd9db734b7
+      size: 11297385
+    - path: data/processed/swat/swat_validation.parquet
+      hash: md5
+      md5: a931e899ac5efbe8fb5775eefa0eae60
+      size: 5093051
+    - path: data/raw/categorical_columns.yaml
+      hash: md5
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: dencad/modeling/evaluate.py
+      hash: md5
+      md5: 195c2dc80d02aed0d4d180c21e93e4fa
+      size: 3304
+    - path: dencad/modeling/train_k_means.py
+      hash: md5
+      md5: 00c0db17bc2466ab5acd59749062c2ee
+      size: 12320
+    - path: dencad/modeling/windowing.py
+      hash: md5
+      md5: c26686c63f6d9221277a9f5ad0e772e5
+      size: 16510
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    params:
+      params.yaml:
+        data:
+          window_steps:
+            swat: 60
+            hai: 30
+            esa: 132
+          eps:
+            swat:
+            - 1.05
+            - 1.2
+            hai:
+            - 5.8
+            - 6.1
+            esa_rare_anomalies:
+            - 6.28
+            - 6.53
+            esa_anomalies:
+            - 5.11
+            - 5.37
+            esa_rare_anomalies_contaminated:
+            - 3.1
+            - 3.26
+            esa_anomalies_contaminated:
+            - 3.1
+            - 3.26
+          scale_windows: true
+          seed: 42
+          workers: 4
+        k_sigma:
+        - 0.5
+        - 0.75
+        - 1.0
+        - 1.25
+        - 1.5
+        - 2.0
+        - 2.5
+        - 3.0
+        - 3.5
+        - 4.0
+        kmeans:
+          contaminated_refit: false
+          min_coverage: 0.5
+          max_iter: 50
+          grid:
+            k:
+            - 2
+            - 4
+            - 8
+            - 16
+            - 32
+            - 64
+    outs:
+    - path: reports/kmeans_swat_60steps_final.json
+      hash: md5
+      md5: 4d7caf532e227b14a60908bd305e30f5
+      size: 1750
+  search_dencad_hai:
+    cmd: python -m dencad.modeling.search --split_dir data/processed/hai --model
+      dencad --runs 15
+    deps:
+    - path: data/processed/hai/hai_train.parquet
+      hash: md5
+      md5: 69d811c730dd76ec06a2e25d982163f3
+      size: 44189475
+    - path: data/processed/hai/hai_validation.parquet
+      hash: md5
+      md5: bd54d4f254f52de938c54a58c00df27b
+      size: 9887711
+    - path: data/raw/categorical_columns.yaml
+      hash: md5
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: dencad/modeling/clustering.py
+      hash: md5
+      md5: e064bf7f3c7077ed02c5134938325a47
+      size: 4797
+    - path: dencad/modeling/evaluate.py
+      hash: md5
+      md5: 195c2dc80d02aed0d4d180c21e93e4fa
+      size: 3304
+    - path: dencad/modeling/lsh.py
+      hash: md5
+      md5: c3aa7c23541b624aeb7bda5cf72bdc03
+      size: 6576
+    - path: dencad/modeling/parallel.py
+      hash: md5
+      md5: 057cefb1b7daa00da203cbc7f8d27e3f
+      size: 8903
+    - path: dencad/modeling/placement.py
+      hash: md5
+      md5: 3ff5e4dff923a5ba42892d34d1bc639b
+      size: 4400
+    - path: dencad/modeling/search.py
+      hash: md5
+      md5: 7953072810994080c85c60f27442e1d2
+      size: 5433
+    - path: dencad/modeling/shards.py
+      hash: md5
+      md5: 3ea94fae518661be097815669ebf14f8
+      size: 8975
+    - path: dencad/modeling/subgraphs.py
+      hash: md5
+      md5: 4b7e00b6a9dc13702e58d596856702fe
+      size: 7256
+    - path: dencad/modeling/train_dencad.py
+      hash: md5
+      md5: b2a641356ccb16982ffd8308aa52297b
+      size: 22189
+    - path: dencad/modeling/windowing.py
+      hash: md5
+      md5: c26686c63f6d9221277a9f5ad0e772e5
+      size: 16510
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    params:
+      params.yaml:
+        data:
+          window_steps:
+            swat: 60
+            hai: 30
+            esa: 132
+          eps: &id005
+            swat:
+            - 1.05
+            - 1.2
+            hai:
+            - 5.8
+            - 6.1
+            esa_rare_anomalies:
+            - 6.28
+            - 6.53
+            esa_anomalies:
+            - 5.11
+            - 5.37
+            esa_rare_anomalies_contaminated:
+            - 3.1
+            - 3.26
+            esa_anomalies_contaminated:
+            - 3.1
+            - 3.26
+          scale_windows: true
+          seed: 42
+          workers: 4
+        dencad:
+          contaminated_refit: false
+          min_coverage: 0.5
+          max_epochs: 200
+          attach_to: clustered
+          mask_centre: false
+          replicas: 4
+          scale_learning_rate: true
+          grid:
+            bits:
+            - 16
+            - 24
+            permutations:
+            - 10
+            - 20
+            band:
+            - 20
+            - 50
+            eps: *id005
+            width_factor:
+            - 1.0
+            - 2.0
+            min_pts:
+            - 10
+            - 5
+            label_change_rate:
+            - 0.05
+            max_members:
+              swat:
+              - 500
+              hai:
+              - 500
+              esa:
+              - 150
+            hidden:
+            - 64
+            - 128
+            latent:
+            - 16
+            - 32
+            layers:
+            - 2
+            - 3
+            learning_rate:
+            - 0.001
+            - 0.003
+            batch_size:
+            - 128
+            patience:
+            - 20
+        k_sigma:
+        - 0.5
+        - 0.75
+        - 1.0
+        - 1.25
+        - 1.5
+        - 2.0
+        - 2.5
+        - 3.0
+        - 3.5
+        - 4.0
+    outs:
+    - path: reports/search_dencad_hai.json
+      hash: md5
+      md5: df23f155c11b49463e1ce83b7878c42b
+      size: 11248
+  dencad_hai:
+    cmd: python -m dencad.modeling.train_dencad --split_dir data/processed/hai 
+      --stage final --selected reports/search_dencad_hai.json
+    deps:
+    - path: data/processed/hai/hai_test.parquet
+      hash: md5
+      md5: c940cdda44098c14330815fd9c36b7ec
+      size: 10024509
+    - path: data/processed/hai/hai_train.parquet
+      hash: md5
+      md5: 69d811c730dd76ec06a2e25d982163f3
+      size: 44189475
+    - path: data/processed/hai/hai_validation.parquet
+      hash: md5
+      md5: bd54d4f254f52de938c54a58c00df27b
+      size: 9887711
+    - path: data/raw/categorical_columns.yaml
+      hash: md5
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: dencad/modeling/clustering.py
+      hash: md5
+      md5: e064bf7f3c7077ed02c5134938325a47
+      size: 4797
+    - path: dencad/modeling/evaluate.py
+      hash: md5
+      md5: 195c2dc80d02aed0d4d180c21e93e4fa
+      size: 3304
+    - path: dencad/modeling/lsh.py
+      hash: md5
+      md5: c3aa7c23541b624aeb7bda5cf72bdc03
+      size: 6576
+    - path: dencad/modeling/parallel.py
+      hash: md5
+      md5: 057cefb1b7daa00da203cbc7f8d27e3f
+      size: 8903
+    - path: dencad/modeling/placement.py
+      hash: md5
+      md5: 3ff5e4dff923a5ba42892d34d1bc639b
+      size: 4400
+    - path: dencad/modeling/shards.py
+      hash: md5
+      md5: 3ea94fae518661be097815669ebf14f8
+      size: 8975
+    - path: dencad/modeling/subgraphs.py
+      hash: md5
+      md5: 4b7e00b6a9dc13702e58d596856702fe
+      size: 7256
+    - path: dencad/modeling/train_dencad.py
+      hash: md5
+      md5: b2a641356ccb16982ffd8308aa52297b
+      size: 22189
+    - path: dencad/modeling/windowing.py
+      hash: md5
+      md5: c26686c63f6d9221277a9f5ad0e772e5
+      size: 16510
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    - path: reports/search_dencad_hai.json
+      hash: md5
+      md5: df23f155c11b49463e1ce83b7878c42b
+      size: 11248
+    params:
+      params.yaml:
+        data:
+          window_steps:
+            swat: 60
+            hai: 30
+            esa: 132
+          eps: &id006
+            swat:
+            - 1.05
+            - 1.2
+            hai:
+            - 5.8
+            - 6.1
+            esa_rare_anomalies:
+            - 6.28
+            - 6.53
+            esa_anomalies:
+            - 5.11
+            - 5.37
+            esa_rare_anomalies_contaminated:
+            - 3.1
+            - 3.26
+            esa_anomalies_contaminated:
+            - 3.1
+            - 3.26
+          scale_windows: true
+          seed: 42
+          workers: 4
+        dencad:
+          contaminated_refit: false
+          min_coverage: 0.5
+          max_epochs: 200
+          attach_to: clustered
+          mask_centre: false
+          replicas: 4
+          scale_learning_rate: true
+          grid:
+            bits:
+            - 16
+            - 24
+            permutations:
+            - 10
+            - 20
+            band:
+            - 20
+            - 50
+            eps: *id006
+            width_factor:
+            - 1.0
+            - 2.0
+            min_pts:
+            - 10
+            - 5
+            label_change_rate:
+            - 0.05
+            max_members:
+              swat:
+              - 500
+              hai:
+              - 500
+              esa:
+              - 150
+            hidden:
+            - 64
+            - 128
+            latent:
+            - 16
+            - 32
+            layers:
+            - 2
+            - 3
+            learning_rate:
+            - 0.001
+            - 0.003
+            batch_size:
+            - 128
+            patience:
+            - 20
+        k_sigma:
+        - 0.5
+        - 0.75
+        - 1.0
+        - 1.25
+        - 1.5
+        - 2.0
+        - 2.5
+        - 3.0
+        - 3.5
+        - 4.0
+    outs:
+    - path: reports/dencad_hai_30steps_final.json
+      hash: md5
+      md5: eed3f9792544ddc1e6e1e4e7e8b57e10
+      size: 1895
+  search_plain_hai:
+    cmd: python -m dencad.modeling.search --split_dir data/processed/hai --model
+      plain --runs 16
+    deps:
+    - path: data/processed/hai/hai_train.parquet
+      hash: md5
+      md5: 69d811c730dd76ec06a2e25d982163f3
+      size: 44189475
+    - path: data/processed/hai/hai_validation.parquet
+      hash: md5
+      md5: bd54d4f254f52de938c54a58c00df27b
+      size: 9887711
+    - path: data/raw/categorical_columns.yaml
+      hash: md5
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: dencad/modeling/evaluate.py
+      hash: md5
+      md5: 195c2dc80d02aed0d4d180c21e93e4fa
+      size: 3304
+    - path: dencad/modeling/search.py
+      hash: md5
+      md5: 7953072810994080c85c60f27442e1d2
+      size: 5433
+    - path: dencad/modeling/subgraphs.py
+      hash: md5
+      md5: 4b7e00b6a9dc13702e58d596856702fe
+      size: 7256
+    - path: dencad/modeling/train_dencad.py
+      hash: md5
+      md5: b2a641356ccb16982ffd8308aa52297b
+      size: 22189
+    - path: dencad/modeling/train_plain.py
+      hash: md5
+      md5: a1eebb09ffc26d94722e2d4907734e25
+      size: 10301
+    - path: dencad/modeling/windowing.py
+      hash: md5
+      md5: c26686c63f6d9221277a9f5ad0e772e5
+      size: 16510
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    params:
+      params.yaml:
+        data:
+          window_steps:
+            swat: 60
+            hai: 30
+            esa: 132
+          eps:
+            swat:
+            - 1.05
+            - 1.2
+            hai:
+            - 5.8
+            - 6.1
+            esa_rare_anomalies:
+            - 6.28
+            - 6.53
+            esa_anomalies:
+            - 5.11
+            - 5.37
+            esa_rare_anomalies_contaminated:
+            - 3.1
+            - 3.26
+            esa_anomalies_contaminated:
+            - 3.1
+            - 3.26
+          scale_windows: true
+          seed: 42
+          workers: 4
+        k_sigma:
+        - 0.5
+        - 0.75
+        - 1.0
+        - 1.25
+        - 1.5
+        - 2.0
+        - 2.5
+        - 3.0
+        - 3.5
+        - 4.0
+        plain:
+          contaminated_refit: false
+          min_coverage: 0.5
+          max_epochs: 200
+          grid:
+            hidden:
+            - 64
+            - 128
+            latent:
+            - 16
+            - 32
+            layers:
+            - 2
+            - 3
+            learning_rate:
+            - 0.001
+            - 0.003
+            batch_size:
+            - 128
+            patience:
+            - 20
+    outs:
+    - path: reports/search_plain_hai.json
+      hash: md5
+      md5: f3208ab943277288be45ad8ef5511968
+      size: 8447
+  plain_hai:
+    cmd: python -m dencad.modeling.train_plain --split_dir data/processed/hai 
+      --stage final --selected reports/search_plain_hai.json
+    deps:
+    - path: data/processed/hai/hai_test.parquet
+      hash: md5
+      md5: c940cdda44098c14330815fd9c36b7ec
+      size: 10024509
+    - path: data/processed/hai/hai_train.parquet
+      hash: md5
+      md5: 69d811c730dd76ec06a2e25d982163f3
+      size: 44189475
+    - path: data/processed/hai/hai_validation.parquet
+      hash: md5
+      md5: bd54d4f254f52de938c54a58c00df27b
+      size: 9887711
+    - path: data/raw/categorical_columns.yaml
+      hash: md5
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: dencad/modeling/evaluate.py
+      hash: md5
+      md5: 195c2dc80d02aed0d4d180c21e93e4fa
+      size: 3304
+    - path: dencad/modeling/subgraphs.py
+      hash: md5
+      md5: 4b7e00b6a9dc13702e58d596856702fe
+      size: 7256
+    - path: dencad/modeling/train_dencad.py
+      hash: md5
+      md5: b2a641356ccb16982ffd8308aa52297b
+      size: 22189
+    - path: dencad/modeling/train_plain.py
+      hash: md5
+      md5: a1eebb09ffc26d94722e2d4907734e25
+      size: 10301
+    - path: dencad/modeling/windowing.py
+      hash: md5
+      md5: c26686c63f6d9221277a9f5ad0e772e5
+      size: 16510
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    - path: reports/search_plain_hai.json
+      hash: md5
+      md5: f3208ab943277288be45ad8ef5511968
+      size: 8447
+    params:
+      params.yaml:
+        data:
+          window_steps:
+            swat: 60
+            hai: 30
+            esa: 132
+          eps:
+            swat:
+            - 1.05
+            - 1.2
+            hai:
+            - 5.8
+            - 6.1
+            esa_rare_anomalies:
+            - 6.28
+            - 6.53
+            esa_anomalies:
+            - 5.11
+            - 5.37
+            esa_rare_anomalies_contaminated:
+            - 3.1
+            - 3.26
+            esa_anomalies_contaminated:
+            - 3.1
+            - 3.26
+          scale_windows: true
+          seed: 42
+          workers: 4
+        k_sigma:
+        - 0.5
+        - 0.75
+        - 1.0
+        - 1.25
+        - 1.5
+        - 2.0
+        - 2.5
+        - 3.0
+        - 3.5
+        - 4.0
+        plain:
+          contaminated_refit: false
+          min_coverage: 0.5
+          max_epochs: 200
+          grid:
+            hidden:
+            - 64
+            - 128
+            latent:
+            - 16
+            - 32
+            layers:
+            - 2
+            - 3
+            learning_rate:
+            - 0.001
+            - 0.003
+            batch_size:
+            - 128
+            patience:
+            - 20
+    outs:
+    - path: reports/plain_hai_30steps_final.json
+      hash: md5
+      md5: 40e6712f81b957deef05050c928e58bc
+      size: 1621
+  search_sigma_hai:
+    cmd: python -m dencad.modeling.search --split_dir data/processed/hai --model
+      sigma --runs 15
+    deps:
+    - path: data/processed/hai/hai_train.parquet
+      hash: md5
+      md5: 69d811c730dd76ec06a2e25d982163f3
+      size: 44189475
+    - path: data/processed/hai/hai_validation.parquet
+      hash: md5
+      md5: bd54d4f254f52de938c54a58c00df27b
+      size: 9887711
+    - path: data/raw/categorical_columns.yaml
+      hash: md5
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: dencad/modeling/clustering.py
+      hash: md5
+      md5: e064bf7f3c7077ed02c5134938325a47
+      size: 4797
+    - path: dencad/modeling/evaluate.py
+      hash: md5
+      md5: 195c2dc80d02aed0d4d180c21e93e4fa
+      size: 3304
+    - path: dencad/modeling/lsh.py
+      hash: md5
+      md5: c3aa7c23541b624aeb7bda5cf72bdc03
+      size: 6576
+    - path: dencad/modeling/parallel.py
+      hash: md5
+      md5: 057cefb1b7daa00da203cbc7f8d27e3f
+      size: 8903
+    - path: dencad/modeling/placement.py
+      hash: md5
+      md5: 3ff5e4dff923a5ba42892d34d1bc639b
+      size: 4400
+    - path: dencad/modeling/search.py
+      hash: md5
+      md5: 7953072810994080c85c60f27442e1d2
+      size: 5433
+    - path: dencad/modeling/shards.py
+      hash: md5
+      md5: 3ea94fae518661be097815669ebf14f8
+      size: 8975
+    - path: dencad/modeling/subgraphs.py
+      hash: md5
+      md5: 4b7e00b6a9dc13702e58d596856702fe
+      size: 7256
+    - path: dencad/modeling/train_dencad.py
+      hash: md5
+      md5: b2a641356ccb16982ffd8308aa52297b
+      size: 22189
+    - path: dencad/modeling/train_sigma.py
+      hash: md5
+      md5: 05971f72f1f42267ced0e77a1e6d0fd9
+      size: 8698
+    - path: dencad/modeling/windowing.py
+      hash: md5
+      md5: c26686c63f6d9221277a9f5ad0e772e5
+      size: 16510
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    params:
+      params.yaml:
+        data:
+          window_steps:
+            swat: 60
+            hai: 30
+            esa: 132
+          eps: &id007
+            swat:
+            - 1.05
+            - 1.2
+            hai:
+            - 5.8
+            - 6.1
+            esa_rare_anomalies:
+            - 6.28
+            - 6.53
+            esa_anomalies:
+            - 5.11
+            - 5.37
+            esa_rare_anomalies_contaminated:
+            - 3.1
+            - 3.26
+            esa_anomalies_contaminated:
+            - 3.1
+            - 3.26
+          scale_windows: true
+          seed: 42
+          workers: 4
+        k_sigma:
+        - 0.5
+        - 0.75
+        - 1.0
+        - 1.25
+        - 1.5
+        - 2.0
+        - 2.5
+        - 3.0
+        - 3.5
+        - 4.0
+        sigma:
+          contaminated_refit: false
+          min_coverage: 0.5
+          attach_to: clustered
+          grid:
+            bits:
+            - 16
+            - 24
+            permutations:
+            - 10
+            - 20
+            band:
+            - 20
+            - 50
+            eps: *id007
+            width_factor:
+            - 1.0
+            - 2.0
+            min_pts:
+            - 10
+            - 5
+            label_change_rate:
+            - 0.05
+    outs:
+    - path: reports/search_sigma_hai.json
+      hash: md5
+      md5: 0e391f103a7697463826c45d405f3dfa
+      size: 8522
+  sigma_hai:
+    cmd: python -m dencad.modeling.train_sigma --split_dir data/processed/hai 
+      --stage final --selected reports/search_sigma_hai.json
+    deps:
+    - path: data/processed/hai/hai_test.parquet
+      hash: md5
+      md5: c940cdda44098c14330815fd9c36b7ec
+      size: 10024509
+    - path: data/processed/hai/hai_train.parquet
+      hash: md5
+      md5: 69d811c730dd76ec06a2e25d982163f3
+      size: 44189475
+    - path: data/processed/hai/hai_validation.parquet
+      hash: md5
+      md5: bd54d4f254f52de938c54a58c00df27b
+      size: 9887711
+    - path: data/raw/categorical_columns.yaml
+      hash: md5
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: dencad/modeling/clustering.py
+      hash: md5
+      md5: e064bf7f3c7077ed02c5134938325a47
+      size: 4797
+    - path: dencad/modeling/evaluate.py
+      hash: md5
+      md5: 195c2dc80d02aed0d4d180c21e93e4fa
+      size: 3304
+    - path: dencad/modeling/lsh.py
+      hash: md5
+      md5: c3aa7c23541b624aeb7bda5cf72bdc03
+      size: 6576
+    - path: dencad/modeling/parallel.py
+      hash: md5
+      md5: 057cefb1b7daa00da203cbc7f8d27e3f
+      size: 8903
+    - path: dencad/modeling/placement.py
+      hash: md5
+      md5: 3ff5e4dff923a5ba42892d34d1bc639b
+      size: 4400
+    - path: dencad/modeling/shards.py
+      hash: md5
+      md5: 3ea94fae518661be097815669ebf14f8
+      size: 8975
+    - path: dencad/modeling/subgraphs.py
+      hash: md5
+      md5: 4b7e00b6a9dc13702e58d596856702fe
+      size: 7256
+    - path: dencad/modeling/train_dencad.py
+      hash: md5
+      md5: b2a641356ccb16982ffd8308aa52297b
+      size: 22189
+    - path: dencad/modeling/train_sigma.py
+      hash: md5
+      md5: 05971f72f1f42267ced0e77a1e6d0fd9
+      size: 8698
+    - path: dencad/modeling/windowing.py
+      hash: md5
+      md5: c26686c63f6d9221277a9f5ad0e772e5
+      size: 16510
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    - path: reports/search_sigma_hai.json
+      hash: md5
+      md5: 0e391f103a7697463826c45d405f3dfa
+      size: 8522
+    params:
+      params.yaml:
+        data:
+          window_steps:
+            swat: 60
+            hai: 30
+            esa: 132
+          eps: &id008
+            swat:
+            - 1.05
+            - 1.2
+            hai:
+            - 5.8
+            - 6.1
+            esa_rare_anomalies:
+            - 6.28
+            - 6.53
+            esa_anomalies:
+            - 5.11
+            - 5.37
+            esa_rare_anomalies_contaminated:
+            - 3.1
+            - 3.26
+            esa_anomalies_contaminated:
+            - 3.1
+            - 3.26
+          scale_windows: true
+          seed: 42
+          workers: 4
+        k_sigma:
+        - 0.5
+        - 0.75
+        - 1.0
+        - 1.25
+        - 1.5
+        - 2.0
+        - 2.5
+        - 3.0
+        - 3.5
+        - 4.0
+        sigma:
+          contaminated_refit: false
+          min_coverage: 0.5
+          attach_to: clustered
+          grid:
+            bits:
+            - 16
+            - 24
+            permutations:
+            - 10
+            - 20
+            band:
+            - 20
+            - 50
+            eps: *id008
+            width_factor:
+            - 1.0
+            - 2.0
+            min_pts:
+            - 10
+            - 5
+            label_change_rate:
+            - 0.05
+    outs:
+    - path: reports/sigma_hai_30steps_final.json
+      hash: md5
+      md5: 91ed7e822e2faca1b3009dd57c06d4bb
+      size: 1678
+  kmeans_hai:
+    cmd: python -m dencad.modeling.train_k_means --split_dir data/processed/hai
+    deps:
+    - path: data/processed/hai/hai_test.parquet
+      hash: md5
+      md5: c940cdda44098c14330815fd9c36b7ec
+      size: 10024509
+    - path: data/processed/hai/hai_train.parquet
+      hash: md5
+      md5: 69d811c730dd76ec06a2e25d982163f3
+      size: 44189475
+    - path: data/processed/hai/hai_validation.parquet
+      hash: md5
+      md5: bd54d4f254f52de938c54a58c00df27b
+      size: 9887711
+    - path: data/raw/categorical_columns.yaml
+      hash: md5
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: dencad/modeling/evaluate.py
+      hash: md5
+      md5: 195c2dc80d02aed0d4d180c21e93e4fa
+      size: 3304
+    - path: dencad/modeling/train_k_means.py
+      hash: md5
+      md5: 00c0db17bc2466ab5acd59749062c2ee
+      size: 12320
+    - path: dencad/modeling/windowing.py
+      hash: md5
+      md5: c26686c63f6d9221277a9f5ad0e772e5
+      size: 16510
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    params:
+      params.yaml:
+        data:
+          window_steps:
+            swat: 60
+            hai: 30
+            esa: 132
+          eps:
+            swat:
+            - 1.05
+            - 1.2
+            hai:
+            - 5.8
+            - 6.1
+            esa_rare_anomalies:
+            - 6.28
+            - 6.53
+            esa_anomalies:
+            - 5.11
+            - 5.37
+            esa_rare_anomalies_contaminated:
+            - 3.1
+            - 3.26
+            esa_anomalies_contaminated:
+            - 3.1
+            - 3.26
+          scale_windows: true
+          seed: 42
+          workers: 4
+        k_sigma:
+        - 0.5
+        - 0.75
+        - 1.0
+        - 1.25
+        - 1.5
+        - 2.0
+        - 2.5
+        - 3.0
+        - 3.5
+        - 4.0
+        kmeans:
+          contaminated_refit: false
+          min_coverage: 0.5
+          max_iter: 50
+          grid:
+            k:
+            - 2
+            - 4
+            - 8
+            - 16
+            - 32
+            - 64
+    outs:
+    - path: reports/kmeans_hai_30steps_final.json
+      hash: md5
+      md5: 1e7e26b3665ea9e289db64df34008fcf
+      size: 1769
+  process_esa_rare_anomalies:
+    cmd: python -m dencad.data.process.process_esa
+    deps:
+    - path: data/interim/esa/split/esa_test.parquet
+      hash: md5
+      md5: 9c68e207d524c83e0da10fee0192d6ed
+      size: 39690914
+    - path: data/interim/esa/split/esa_train.parquet
+      hash: md5
+      md5: 20c0b12f594c6ea6c2727428a577d525
+      size: 182129765
+    - path: data/interim/esa/split/esa_validation.parquet
+      hash: md5
+      md5: c2ab8ffc9e7856a242a97c3e6cae317d
+      size: 39738253
+    - path: data/raw/categorical_columns.yaml
+      hash: md5
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: data/raw/esa/ESA-Mission1/channels.csv
+      hash: md5
+      md5: 1d2d3658867e92d0fad1f6e749dcff27
+      size: 3782
+    - path: dencad/data/process/process.py
+      hash: md5
+      md5: 3ad6693cb691dda6c8bed5a0e4270456
+      size: 13225
+    - path: dencad/data/process/process_esa.py
+      hash: md5
+      md5: 34a485797f26f5e6ce62af16b7d7facd
+      size: 4552
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    outs:
+    - path: data/processed/esa_rare_anomalies/esa_test.parquet
+      hash: md5
+      md5: 0cd59d028f74357c57d1ac6d58fb88b8
+      size: 31568432
+    - path: data/processed/esa_rare_anomalies/esa_train.parquet
+      hash: md5
+      md5: b5a92130da0fca9e164ca5e460adbc0b
+      size: 123963327
+    - path: data/processed/esa_rare_anomalies/esa_validation.parquet
+      hash: md5
+      md5: 252fac8ea967236b50e55cf6b9b942d3
+      size: 31688541
+  process_esa_rare_anomalies_contaminated:
+    cmd: python -m dencad.data.process.process_esa --keep-positive-train
+    deps:
+    - path: data/interim/esa/split/esa_test.parquet
+      hash: md5
+      md5: 9c68e207d524c83e0da10fee0192d6ed
+      size: 39690914
+    - path: data/interim/esa/split/esa_train.parquet
+      hash: md5
+      md5: 20c0b12f594c6ea6c2727428a577d525
+      size: 182129765
+    - path: data/interim/esa/split/esa_validation.parquet
+      hash: md5
+      md5: c2ab8ffc9e7856a242a97c3e6cae317d
+      size: 39738253
+    - path: data/raw/categorical_columns.yaml
+      hash: md5
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: data/raw/esa/ESA-Mission1/channels.csv
+      hash: md5
+      md5: 1d2d3658867e92d0fad1f6e749dcff27
+      size: 3782
+    - path: dencad/data/process/process.py
+      hash: md5
+      md5: 3ad6693cb691dda6c8bed5a0e4270456
+      size: 13225
+    - path: dencad/data/process/process_esa.py
+      hash: md5
+      md5: 34a485797f26f5e6ce62af16b7d7facd
+      size: 4552
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    outs:
+    - path: data/processed/esa_rare_anomalies_contaminated/esa_test.parquet
+      hash: md5
+      md5: 60e2c9329a5c2609c79daf44a973792c
+      size: 28493675
+    - path: data/processed/esa_rare_anomalies_contaminated/esa_train.parquet
+      hash: md5
+      md5: 298278d3382ec0f76ff81d610f674b7e
+      size: 130679912
+    - path: 
+        data/processed/esa_rare_anomalies_contaminated/esa_validation.parquet
+      hash: md5
+      md5: 117896aff53f6ed8dbece1f8bb99b410
+      size: 28642866
+  process_esa_anomalies:
+    cmd: python -m dencad.data.process.process_esa --rare-as-normal
+    deps:
+    - path: data/interim/esa/split/esa_test.parquet
+      hash: md5
+      md5: 9c68e207d524c83e0da10fee0192d6ed
+      size: 39690914
+    - path: data/interim/esa/split/esa_train.parquet
+      hash: md5
+      md5: 20c0b12f594c6ea6c2727428a577d525
+      size: 182129765
+    - path: data/interim/esa/split/esa_validation.parquet
+      hash: md5
+      md5: c2ab8ffc9e7856a242a97c3e6cae317d
+      size: 39738253
+    - path: data/raw/categorical_columns.yaml
+      hash: md5
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: data/raw/esa/ESA-Mission1/channels.csv
+      hash: md5
+      md5: 1d2d3658867e92d0fad1f6e749dcff27
+      size: 3782
+    - path: dencad/data/process/process.py
+      hash: md5
+      md5: 3ad6693cb691dda6c8bed5a0e4270456
+      size: 13225
+    - path: dencad/data/process/process_esa.py
+      hash: md5
+      md5: 34a485797f26f5e6ce62af16b7d7facd
+      size: 4552
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    outs:
+    - path: data/processed/esa_anomalies/esa_test.parquet
+      hash: md5
+      md5: 0c8ce73762929bfdd3a368b4a81e6fa2
+      size: 30843867
+    - path: data/processed/esa_anomalies/esa_train.parquet
+      hash: md5
+      md5: 912043b33018574860cd359249287a8c
+      size: 131028481
+    - path: data/processed/esa_anomalies/esa_validation.parquet
+      hash: md5
+      md5: 234a1a8abda81598b00c9179486bd6fa
+      size: 30907256
+  process_esa_anomalies_contaminated:
+    cmd: python -m dencad.data.process.process_esa --rare-as-normal 
+      --keep-positive-train
+    deps:
+    - path: data/interim/esa/split/esa_test.parquet
+      hash: md5
+      md5: 9c68e207d524c83e0da10fee0192d6ed
+      size: 39690914
+    - path: data/interim/esa/split/esa_train.parquet
+      hash: md5
+      md5: 20c0b12f594c6ea6c2727428a577d525
+      size: 182129765
+    - path: data/interim/esa/split/esa_validation.parquet
+      hash: md5
+      md5: c2ab8ffc9e7856a242a97c3e6cae317d
+      size: 39738253
+    - path: data/raw/categorical_columns.yaml
+      hash: md5
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: data/raw/esa/ESA-Mission1/channels.csv
+      hash: md5
+      md5: 1d2d3658867e92d0fad1f6e749dcff27
+      size: 3782
+    - path: dencad/data/process/process.py
+      hash: md5
+      md5: 3ad6693cb691dda6c8bed5a0e4270456
+      size: 13225
+    - path: dencad/data/process/process_esa.py
+      hash: md5
+      md5: 34a485797f26f5e6ce62af16b7d7facd
+      size: 4552
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    outs:
+    - path: data/processed/esa_anomalies_contaminated/esa_test.parquet
+      hash: md5
+      md5: 16844e5cb4db4cf4a0713f9a7e894cb7
+      size: 28493624
+    - path: data/processed/esa_anomalies_contaminated/esa_train.parquet
+      hash: md5
+      md5: fc2c615d5ca974802fd82e9fa08862c2
+      size: 130679624
+    - path: data/processed/esa_anomalies_contaminated/esa_validation.parquet
+      hash: md5
+      md5: 0a32cda148556e75806abd2dd7ca3387
+      size: 28642799
+  search_dencad_esa_rare_anomalies:
+    cmd: python -m dencad.modeling.search --split_dir 
+      data/processed/esa_rare_anomalies --model dencad --runs 15
+    deps:
+    - path: data/processed/esa_rare_anomalies/esa_train.parquet
+      hash: md5
+      md5: b5a92130da0fca9e164ca5e460adbc0b
+      size: 123963327
+    - path: data/processed/esa_rare_anomalies/esa_validation.parquet
+      hash: md5
+      md5: 252fac8ea967236b50e55cf6b9b942d3
+      size: 31688541
+    - path: data/raw/categorical_columns.yaml
+      hash: md5
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: dencad/modeling/clustering.py
+      hash: md5
+      md5: e064bf7f3c7077ed02c5134938325a47
+      size: 4797
+    - path: dencad/modeling/evaluate.py
+      hash: md5
+      md5: 195c2dc80d02aed0d4d180c21e93e4fa
+      size: 3304
+    - path: dencad/modeling/lsh.py
+      hash: md5
+      md5: c3aa7c23541b624aeb7bda5cf72bdc03
+      size: 6576
+    - path: dencad/modeling/parallel.py
+      hash: md5
+      md5: 057cefb1b7daa00da203cbc7f8d27e3f
+      size: 8903
+    - path: dencad/modeling/placement.py
+      hash: md5
+      md5: 3ff5e4dff923a5ba42892d34d1bc639b
+      size: 4400
+    - path: dencad/modeling/search.py
+      hash: md5
+      md5: 7953072810994080c85c60f27442e1d2
+      size: 5433
+    - path: dencad/modeling/shards.py
+      hash: md5
+      md5: 3ea94fae518661be097815669ebf14f8
+      size: 8975
+    - path: dencad/modeling/subgraphs.py
+      hash: md5
+      md5: 4b7e00b6a9dc13702e58d596856702fe
+      size: 7256
+    - path: dencad/modeling/train_dencad.py
+      hash: md5
+      md5: b2a641356ccb16982ffd8308aa52297b
+      size: 22189
+    - path: dencad/modeling/windowing.py
+      hash: md5
+      md5: c26686c63f6d9221277a9f5ad0e772e5
+      size: 16510
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    params:
+      params.yaml:
+        data:
+          window_steps:
+            swat: 60
+            hai: 30
+            esa: 132
+          eps: &id009
+            swat:
+            - 1.05
+            - 1.2
+            hai:
+            - 5.8
+            - 6.1
+            esa_rare_anomalies:
+            - 6.28
+            - 6.53
+            esa_anomalies:
+            - 5.11
+            - 5.37
+            esa_rare_anomalies_contaminated:
+            - 3.1
+            - 3.26
+            esa_anomalies_contaminated:
+            - 3.1
+            - 3.26
+          scale_windows: true
+          seed: 42
+          workers: 4
+        dencad:
+          contaminated_refit: false
+          min_coverage: 0.5
+          max_epochs: 200
+          attach_to: clustered
+          mask_centre: false
+          replicas: 4
+          scale_learning_rate: true
+          grid:
+            bits:
+            - 16
+            - 24
+            permutations:
+            - 10
+            - 20
+            band:
+            - 20
+            - 50
+            eps: *id009
+            width_factor:
+            - 1.0
+            - 2.0
+            min_pts:
+            - 10
+            - 5
+            label_change_rate:
+            - 0.05
+            max_members:
+              swat:
+              - 500
+              hai:
+              - 500
+              esa:
+              - 150
+            hidden:
+            - 64
+            - 128
+            latent:
+            - 16
+            - 32
+            layers:
+            - 2
+            - 3
+            learning_rate:
+            - 0.001
+            - 0.003
+            batch_size:
+            - 128
+            patience:
+            - 20
+        k_sigma:
+        - 0.5
+        - 0.75
+        - 1.0
+        - 1.25
+        - 1.5
+        - 2.0
+        - 2.5
+        - 3.0
+        - 3.5
+        - 4.0
+    outs:
+    - path: reports/search_dencad_esa_rare_anomalies.json
+      hash: md5
+      md5: 8e21874dab7b66c1e4f78d2d087260fa
+      size: 11784
+  dencad_esa_rare_anomalies:
+    cmd: python -m dencad.modeling.train_dencad --split_dir 
+      data/processed/esa_rare_anomalies --stage final --selected 
+      reports/search_dencad_esa_rare_anomalies.json
+    deps:
+    - path: data/processed/esa_rare_anomalies/esa_test.parquet
+      hash: md5
+      md5: 0cd59d028f74357c57d1ac6d58fb88b8
+      size: 31568432
+    - path: data/processed/esa_rare_anomalies/esa_train.parquet
+      hash: md5
+      md5: b5a92130da0fca9e164ca5e460adbc0b
+      size: 123963327
+    - path: data/processed/esa_rare_anomalies/esa_validation.parquet
+      hash: md5
+      md5: 252fac8ea967236b50e55cf6b9b942d3
+      size: 31688541
+    - path: data/raw/categorical_columns.yaml
+      hash: md5
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: dencad/modeling/clustering.py
+      hash: md5
+      md5: e064bf7f3c7077ed02c5134938325a47
+      size: 4797
+    - path: dencad/modeling/evaluate.py
+      hash: md5
+      md5: 195c2dc80d02aed0d4d180c21e93e4fa
+      size: 3304
+    - path: dencad/modeling/lsh.py
+      hash: md5
+      md5: c3aa7c23541b624aeb7bda5cf72bdc03
+      size: 6576
+    - path: dencad/modeling/parallel.py
+      hash: md5
+      md5: 057cefb1b7daa00da203cbc7f8d27e3f
+      size: 8903
+    - path: dencad/modeling/placement.py
+      hash: md5
+      md5: 3ff5e4dff923a5ba42892d34d1bc639b
+      size: 4400
+    - path: dencad/modeling/shards.py
+      hash: md5
+      md5: 3ea94fae518661be097815669ebf14f8
+      size: 8975
+    - path: dencad/modeling/subgraphs.py
+      hash: md5
+      md5: 4b7e00b6a9dc13702e58d596856702fe
+      size: 7256
+    - path: dencad/modeling/train_dencad.py
+      hash: md5
+      md5: b2a641356ccb16982ffd8308aa52297b
+      size: 22189
+    - path: dencad/modeling/windowing.py
+      hash: md5
+      md5: c26686c63f6d9221277a9f5ad0e772e5
+      size: 16510
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    - path: reports/search_dencad_esa_rare_anomalies.json
+      hash: md5
+      md5: 8e21874dab7b66c1e4f78d2d087260fa
+      size: 11784
+    params:
+      params.yaml:
+        data:
+          window_steps:
+            swat: 60
+            hai: 30
+            esa: 132
+          eps: &id010
+            swat:
+            - 1.05
+            - 1.2
+            hai:
+            - 5.8
+            - 6.1
+            esa_rare_anomalies:
+            - 6.28
+            - 6.53
+            esa_anomalies:
+            - 5.11
+            - 5.37
+            esa_rare_anomalies_contaminated:
+            - 3.1
+            - 3.26
+            esa_anomalies_contaminated:
+            - 3.1
+            - 3.26
+          scale_windows: true
+          seed: 42
+          workers: 4
+        dencad:
+          contaminated_refit: false
+          min_coverage: 0.5
+          max_epochs: 200
+          attach_to: clustered
+          mask_centre: false
+          replicas: 4
+          scale_learning_rate: true
+          grid:
+            bits:
+            - 16
+            - 24
+            permutations:
+            - 10
+            - 20
+            band:
+            - 20
+            - 50
+            eps: *id010
+            width_factor:
+            - 1.0
+            - 2.0
+            min_pts:
+            - 10
+            - 5
+            label_change_rate:
+            - 0.05
+            max_members:
+              swat:
+              - 500
+              hai:
+              - 500
+              esa:
+              - 150
+            hidden:
+            - 64
+            - 128
+            latent:
+            - 16
+            - 32
+            layers:
+            - 2
+            - 3
+            learning_rate:
+            - 0.001
+            - 0.003
+            batch_size:
+            - 128
+            patience:
+            - 20
+        k_sigma:
+        - 0.5
+        - 0.75
+        - 1.0
+        - 1.25
+        - 1.5
+        - 2.0
+        - 2.5
+        - 3.0
+        - 3.5
+        - 4.0
+    outs:
+    - path: reports/dencad_esa_rare_anomalies_132steps_final.json
+      hash: md5
+      md5: d513f044d45d8dad0dcbdf368084423f
+      size: 1881
+  search_plain_esa_rare_anomalies:
+    cmd: python -m dencad.modeling.search --split_dir 
+      data/processed/esa_rare_anomalies --model plain --runs 16
+    deps:
+    - path: data/processed/esa_rare_anomalies/esa_train.parquet
+      hash: md5
+      md5: b5a92130da0fca9e164ca5e460adbc0b
+      size: 123963327
+    - path: data/processed/esa_rare_anomalies/esa_validation.parquet
+      hash: md5
+      md5: 252fac8ea967236b50e55cf6b9b942d3
+      size: 31688541
+    - path: data/raw/categorical_columns.yaml
+      hash: md5
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: dencad/modeling/evaluate.py
+      hash: md5
+      md5: 195c2dc80d02aed0d4d180c21e93e4fa
+      size: 3304
+    - path: dencad/modeling/search.py
+      hash: md5
+      md5: 7953072810994080c85c60f27442e1d2
+      size: 5433
+    - path: dencad/modeling/subgraphs.py
+      hash: md5
+      md5: 4b7e00b6a9dc13702e58d596856702fe
+      size: 7256
+    - path: dencad/modeling/train_dencad.py
+      hash: md5
+      md5: b2a641356ccb16982ffd8308aa52297b
+      size: 22189
+    - path: dencad/modeling/train_plain.py
+      hash: md5
+      md5: a1eebb09ffc26d94722e2d4907734e25
+      size: 10301
+    - path: dencad/modeling/windowing.py
+      hash: md5
+      md5: c26686c63f6d9221277a9f5ad0e772e5
+      size: 16510
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    params:
+      params.yaml:
+        data:
+          window_steps:
+            swat: 60
+            hai: 30
+            esa: 132
+          eps:
+            swat:
+            - 1.05
+            - 1.2
+            hai:
+            - 5.8
+            - 6.1
+            esa_rare_anomalies:
+            - 6.28
+            - 6.53
+            esa_anomalies:
+            - 5.11
+            - 5.37
+            esa_rare_anomalies_contaminated:
+            - 3.1
+            - 3.26
+            esa_anomalies_contaminated:
+            - 3.1
+            - 3.26
+          scale_windows: true
+          seed: 42
+          workers: 4
+        k_sigma:
+        - 0.5
+        - 0.75
+        - 1.0
+        - 1.25
+        - 1.5
+        - 2.0
+        - 2.5
+        - 3.0
+        - 3.5
+        - 4.0
+        plain:
+          contaminated_refit: false
+          min_coverage: 0.5
+          max_epochs: 200
+          grid:
+            hidden:
+            - 64
+            - 128
+            latent:
+            - 16
+            - 32
+            layers:
+            - 2
+            - 3
+            learning_rate:
+            - 0.001
+            - 0.003
+            batch_size:
+            - 128
+            patience:
+            - 20
+    outs:
+    - path: reports/search_plain_esa_rare_anomalies.json
+      hash: md5
+      md5: 4b0aa1edaabb21a63bfe8626b3960150
+      size: 8450
+  plain_esa_rare_anomalies:
+    cmd: python -m dencad.modeling.train_plain --split_dir 
+      data/processed/esa_rare_anomalies --stage final --selected 
+      reports/search_plain_esa_rare_anomalies.json
+    deps:
+    - path: data/processed/esa_rare_anomalies/esa_test.parquet
+      hash: md5
+      md5: 0cd59d028f74357c57d1ac6d58fb88b8
+      size: 31568432
+    - path: data/processed/esa_rare_anomalies/esa_train.parquet
+      hash: md5
+      md5: b5a92130da0fca9e164ca5e460adbc0b
+      size: 123963327
+    - path: data/processed/esa_rare_anomalies/esa_validation.parquet
+      hash: md5
+      md5: 252fac8ea967236b50e55cf6b9b942d3
+      size: 31688541
+    - path: data/raw/categorical_columns.yaml
+      hash: md5
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: dencad/modeling/evaluate.py
+      hash: md5
+      md5: 195c2dc80d02aed0d4d180c21e93e4fa
+      size: 3304
+    - path: dencad/modeling/subgraphs.py
+      hash: md5
+      md5: 4b7e00b6a9dc13702e58d596856702fe
+      size: 7256
+    - path: dencad/modeling/train_dencad.py
+      hash: md5
+      md5: b2a641356ccb16982ffd8308aa52297b
+      size: 22189
+    - path: dencad/modeling/train_plain.py
+      hash: md5
+      md5: a1eebb09ffc26d94722e2d4907734e25
+      size: 10301
+    - path: dencad/modeling/windowing.py
+      hash: md5
+      md5: c26686c63f6d9221277a9f5ad0e772e5
+      size: 16510
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    - path: reports/search_plain_esa_rare_anomalies.json
+      hash: md5
+      md5: 4b0aa1edaabb21a63bfe8626b3960150
+      size: 8450
+    params:
+      params.yaml:
+        data:
+          window_steps:
+            swat: 60
+            hai: 30
+            esa: 132
+          eps:
+            swat:
+            - 1.05
+            - 1.2
+            hai:
+            - 5.8
+            - 6.1
+            esa_rare_anomalies:
+            - 6.28
+            - 6.53
+            esa_anomalies:
+            - 5.11
+            - 5.37
+            esa_rare_anomalies_contaminated:
+            - 3.1
+            - 3.26
+            esa_anomalies_contaminated:
+            - 3.1
+            - 3.26
+          scale_windows: true
+          seed: 42
+          workers: 4
+        k_sigma:
+        - 0.5
+        - 0.75
+        - 1.0
+        - 1.25
+        - 1.5
+        - 2.0
+        - 2.5
+        - 3.0
+        - 3.5
+        - 4.0
+        plain:
+          contaminated_refit: false
+          min_coverage: 0.5
+          max_epochs: 200
+          grid:
+            hidden:
+            - 64
+            - 128
+            latent:
+            - 16
+            - 32
+            layers:
+            - 2
+            - 3
+            learning_rate:
+            - 0.001
+            - 0.003
+            batch_size:
+            - 128
+            patience:
+            - 20
+    outs:
+    - path: reports/plain_esa_rare_anomalies_132steps_final.json
+      hash: md5
+      md5: 36e98183046fcae802a3744d63521455
+      size: 1606
+  search_sigma_esa_rare_anomalies:
+    cmd: python -m dencad.modeling.search --split_dir 
+      data/processed/esa_rare_anomalies --model sigma --runs 15
+    deps:
+    - path: data/processed/esa_rare_anomalies/esa_train.parquet
+      hash: md5
+      md5: b5a92130da0fca9e164ca5e460adbc0b
+      size: 123963327
+    - path: data/processed/esa_rare_anomalies/esa_validation.parquet
+      hash: md5
+      md5: 252fac8ea967236b50e55cf6b9b942d3
+      size: 31688541
+    - path: data/raw/categorical_columns.yaml
+      hash: md5
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: dencad/modeling/clustering.py
+      hash: md5
+      md5: e064bf7f3c7077ed02c5134938325a47
+      size: 4797
+    - path: dencad/modeling/evaluate.py
+      hash: md5
+      md5: 195c2dc80d02aed0d4d180c21e93e4fa
+      size: 3304
+    - path: dencad/modeling/lsh.py
+      hash: md5
+      md5: c3aa7c23541b624aeb7bda5cf72bdc03
+      size: 6576
+    - path: dencad/modeling/parallel.py
+      hash: md5
+      md5: 057cefb1b7daa00da203cbc7f8d27e3f
+      size: 8903
+    - path: dencad/modeling/placement.py
+      hash: md5
+      md5: 3ff5e4dff923a5ba42892d34d1bc639b
+      size: 4400
+    - path: dencad/modeling/search.py
+      hash: md5
+      md5: 7953072810994080c85c60f27442e1d2
+      size: 5433
+    - path: dencad/modeling/shards.py
+      hash: md5
+      md5: 3ea94fae518661be097815669ebf14f8
+      size: 8975
+    - path: dencad/modeling/subgraphs.py
+      hash: md5
+      md5: 4b7e00b6a9dc13702e58d596856702fe
+      size: 7256
+    - path: dencad/modeling/train_dencad.py
+      hash: md5
+      md5: b2a641356ccb16982ffd8308aa52297b
+      size: 22189
+    - path: dencad/modeling/train_sigma.py
+      hash: md5
+      md5: 05971f72f1f42267ced0e77a1e6d0fd9
+      size: 8698
+    - path: dencad/modeling/windowing.py
+      hash: md5
+      md5: c26686c63f6d9221277a9f5ad0e772e5
+      size: 16510
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    params:
+      params.yaml:
+        data:
+          window_steps:
+            swat: 60
+            hai: 30
+            esa: 132
+          eps: &id011
+            swat:
+            - 1.05
+            - 1.2
+            hai:
+            - 5.8
+            - 6.1
+            esa_rare_anomalies:
+            - 6.28
+            - 6.53
+            esa_anomalies:
+            - 5.11
+            - 5.37
+            esa_rare_anomalies_contaminated:
+            - 3.1
+            - 3.26
+            esa_anomalies_contaminated:
+            - 3.1
+            - 3.26
+          scale_windows: true
+          seed: 42
+          workers: 4
+        k_sigma:
+        - 0.5
+        - 0.75
+        - 1.0
+        - 1.25
+        - 1.5
+        - 2.0
+        - 2.5
+        - 3.0
+        - 3.5
+        - 4.0
+        sigma:
+          contaminated_refit: false
+          min_coverage: 0.5
+          attach_to: clustered
+          grid:
+            bits:
+            - 16
+            - 24
+            permutations:
+            - 10
+            - 20
+            band:
+            - 20
+            - 50
+            eps: *id011
+            width_factor:
+            - 1.0
+            - 2.0
+            min_pts:
+            - 10
+            - 5
+            label_change_rate:
+            - 0.05
+    outs:
+    - path: reports/search_sigma_esa_rare_anomalies.json
+      hash: md5
+      md5: c465202b4d545e601a3d7c2e80d85d5a
+      size: 8539
+  sigma_esa_rare_anomalies:
+    cmd: python -m dencad.modeling.train_sigma --split_dir 
+      data/processed/esa_rare_anomalies --stage final --selected 
+      reports/search_sigma_esa_rare_anomalies.json
+    deps:
+    - path: data/processed/esa_rare_anomalies/esa_test.parquet
+      hash: md5
+      md5: 0cd59d028f74357c57d1ac6d58fb88b8
+      size: 31568432
+    - path: data/processed/esa_rare_anomalies/esa_train.parquet
+      hash: md5
+      md5: b5a92130da0fca9e164ca5e460adbc0b
+      size: 123963327
+    - path: data/processed/esa_rare_anomalies/esa_validation.parquet
+      hash: md5
+      md5: 252fac8ea967236b50e55cf6b9b942d3
+      size: 31688541
+    - path: data/raw/categorical_columns.yaml
+      hash: md5
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: dencad/modeling/clustering.py
+      hash: md5
+      md5: e064bf7f3c7077ed02c5134938325a47
+      size: 4797
+    - path: dencad/modeling/evaluate.py
+      hash: md5
+      md5: 195c2dc80d02aed0d4d180c21e93e4fa
+      size: 3304
+    - path: dencad/modeling/lsh.py
+      hash: md5
+      md5: c3aa7c23541b624aeb7bda5cf72bdc03
+      size: 6576
+    - path: dencad/modeling/parallel.py
+      hash: md5
+      md5: 057cefb1b7daa00da203cbc7f8d27e3f
+      size: 8903
+    - path: dencad/modeling/placement.py
+      hash: md5
+      md5: 3ff5e4dff923a5ba42892d34d1bc639b
+      size: 4400
+    - path: dencad/modeling/shards.py
+      hash: md5
+      md5: 3ea94fae518661be097815669ebf14f8
+      size: 8975
+    - path: dencad/modeling/subgraphs.py
+      hash: md5
+      md5: 4b7e00b6a9dc13702e58d596856702fe
+      size: 7256
+    - path: dencad/modeling/train_dencad.py
+      hash: md5
+      md5: b2a641356ccb16982ffd8308aa52297b
+      size: 22189
+    - path: dencad/modeling/train_sigma.py
+      hash: md5
+      md5: 05971f72f1f42267ced0e77a1e6d0fd9
+      size: 8698
+    - path: dencad/modeling/windowing.py
+      hash: md5
+      md5: c26686c63f6d9221277a9f5ad0e772e5
+      size: 16510
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    - path: reports/search_sigma_esa_rare_anomalies.json
+      hash: md5
+      md5: c465202b4d545e601a3d7c2e80d85d5a
+      size: 8539
+    params:
+      params.yaml:
+        data:
+          window_steps:
+            swat: 60
+            hai: 30
+            esa: 132
+          eps: &id012
+            swat:
+            - 1.05
+            - 1.2
+            hai:
+            - 5.8
+            - 6.1
+            esa_rare_anomalies:
+            - 6.28
+            - 6.53
+            esa_anomalies:
+            - 5.11
+            - 5.37
+            esa_rare_anomalies_contaminated:
+            - 3.1
+            - 3.26
+            esa_anomalies_contaminated:
+            - 3.1
+            - 3.26
+          scale_windows: true
+          seed: 42
+          workers: 4
+        k_sigma:
+        - 0.5
+        - 0.75
+        - 1.0
+        - 1.25
+        - 1.5
+        - 2.0
+        - 2.5
+        - 3.0
+        - 3.5
+        - 4.0
+        sigma:
+          contaminated_refit: false
+          min_coverage: 0.5
+          attach_to: clustered
+          grid:
+            bits:
+            - 16
+            - 24
+            permutations:
+            - 10
+            - 20
+            band:
+            - 20
+            - 50
+            eps: *id012
+            width_factor:
+            - 1.0
+            - 2.0
+            min_pts:
+            - 10
+            - 5
+            label_change_rate:
+            - 0.05
+    outs:
+    - path: reports/sigma_esa_rare_anomalies_132steps_final.json
+      hash: md5
+      md5: ba9fefda537201c568925b2157c3cb1c
+      size: 1707
+  kmeans_esa_rare_anomalies:
+    cmd: python -m dencad.modeling.train_k_means --split_dir 
+      data/processed/esa_rare_anomalies
+    deps:
+    - path: data/processed/esa_rare_anomalies/esa_test.parquet
+      hash: md5
+      md5: 0cd59d028f74357c57d1ac6d58fb88b8
+      size: 31568432
+    - path: data/processed/esa_rare_anomalies/esa_train.parquet
+      hash: md5
+      md5: b5a92130da0fca9e164ca5e460adbc0b
+      size: 123963327
+    - path: data/processed/esa_rare_anomalies/esa_validation.parquet
+      hash: md5
+      md5: 252fac8ea967236b50e55cf6b9b942d3
+      size: 31688541
+    - path: data/raw/categorical_columns.yaml
+      hash: md5
+      md5: 78bb0530f9f11e336cebe2452f0c918d
+      size: 2501
+    - path: dencad/modeling/evaluate.py
+      hash: md5
+      md5: 195c2dc80d02aed0d4d180c21e93e4fa
+      size: 3304
+    - path: dencad/modeling/train_k_means.py
+      hash: md5
+      md5: 00c0db17bc2466ab5acd59749062c2ee
+      size: 12320
+    - path: dencad/modeling/windowing.py
+      hash: md5
+      md5: c26686c63f6d9221277a9f5ad0e772e5
+      size: 16510
+    - path: dencad/utils.py
+      hash: md5
+      md5: e3d8af5fd7bc07a253f156cddf3c12f8
+      size: 4425
+    params:
+      params.yaml:
+        data:
+          window_steps:
+            swat: 60
+            hai: 30
+            esa: 132
+          eps:
+            swat:
+            - 1.05
+            - 1.2
+            hai:
+            - 5.8
+            - 6.1
+            esa_rare_anomalies:
+            - 6.28
+            - 6.53
+            esa_anomalies:
+            - 5.11
+            - 5.37
+            esa_rare_anomalies_contaminated:
+            - 3.1
+            - 3.26
+            esa_anomalies_contaminated:
+            - 3.1
+            - 3.26
+          scale_windows: true
+          seed: 42
+          workers: 4
+        k_sigma:
+        - 0.5
+        - 0.75
+        - 1.0
+        - 1.25
+        - 1.5
+        - 2.0
+        - 2.5
+        - 3.0
+        - 3.5
+        - 4.0
+        kmeans:
+          contaminated_refit: false
+          min_coverage: 0.5
+          max_iter: 50
+          grid:
+            k:
+            - 2
+            - 4
+            - 8
+            - 16
+            - 32
+            - 64
+    outs:
+    - path: reports/kmeans_esa_rare_anomalies_132steps_final.json
+      hash: md5
+      md5: 22bc179465c4d5091afe7b939dfe001f
+      size: 1779
