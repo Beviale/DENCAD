@@ -182,7 +182,6 @@ def read_shard(out_dir: Path, rank: int, eps: float,
         return (np.concatenate(rows) if rows else np.zeros(0, dtype="int64")), egos
 
     _, egos = build(queries)
-    # Shuffled once here, so a batch is not one cluster: the fit sees every example.
     order = np.arange(len(egos))
     np.random.default_rng(seed + rank).shuffle(order)
 
