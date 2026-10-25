@@ -39,7 +39,8 @@ import pandas as pd
 from scipy.spatial.distance import cdist
 
 from dencad.modeling import windowing as W
-from dencad.modeling.evaluate import metrics, save_report
+from dencad.modeling.evaluate import (in_sigmas, metrics, save_report,
+                                      sigma_scale)
 from dencad.utils import declared_categorical, grid_axes, k_sigma, model_config
 
 from pyspark.ml.functions import vector_to_array
@@ -66,17 +67,9 @@ def get_distributed_scorer(centroids):
     return _scorer
 
 
-def distance_spread(df, centroids):
-    """Mean and deviation of the training distance to the nearest centroid."""
-    got = (df.select(get_distributed_scorer(centroids)(F.col("features_arr")).alias("_d"))
-           .agg(F.avg("_d"), F.stddev_pop("_d")).collect()[0])
-    return float(got[0]), float(got[1] or 0.0)
-
-
-def _scored(df, centroids, label: str, mu: float, sd: float):
-    """Labels and scores of one part: the distance in deviations, in time order."""
-    d = get_distributed_scorer(centroids)(F.col("features_arr"))
-    score = ((d - F.lit(mu)) / F.lit(max(sd, 1e-6))).alias("_s")
+def _scored(df, centroids, label: str):
+    """Labels and distances of one part, in time order."""
+    score = get_distributed_scorer(centroids)(F.col("features_arr")).alias("_s")
     rows = df.select(W.INDEX, score, label).orderBy(W.INDEX).collect()
     return (np.asarray([r[label] for r in rows], dtype="uint8"),
             np.asarray([r["_s"] for r in rows], dtype="float64"))
@@ -97,9 +90,9 @@ def train_k_means(
     """Train, select k, refit, save. Returns the model directory."""
     split_dir, models_dir = Path(split_dir), Path(models_dir)
     dataset, files = W.discover(split_dir)
-    cfg = model_config("kmeans", dataset)
-    k_values = k_values if k_values is not None else (grid_axes("kmeans").get("k")
-                                                      or DEFAULT_K)
+    cfg = model_config("kmeans", dataset, split_dir.name)
+    if k_values is None:
+        k_values = grid_axes("kmeans", dataset, split_dir.name).get("k") or DEFAULT_K
     seed = seed if seed is not None else cfg.get("seed", 42)
     max_iter = max_iter if max_iter is not None else cfg.get("max_iter", 50)
     workers = workers if workers is not None else cfg.get("workers", 4)
@@ -142,8 +135,9 @@ def train_k_means(
             model = KMeans(k=k, seed=seed, maxIter=max_iter,
                            featuresCol="features").fit(vec["train"])
             centroids = model.clusterCenters()
-            mu, sd = distance_spread(vec_train, centroids)
-            y_val, s = _scored(vec_val, centroids, label, mu, sd)
+            mu, sd = sigma_scale(_scored(vec_train, centroids, label)[1])
+            y_val, d = _scored(vec_val, centroids, label)
+            s = in_sigmas(d, mu, sd)
             m = metrics(y_val, s)
             by_k = {kk: metrics(y_val, s, threshold=kk) for kk in sigmas}
             k_best = max(sigmas, key=lambda kk: by_k[kk]["f1"])
@@ -175,13 +169,12 @@ def train_k_means(
         final = KMeans(k=k_star, seed=seed, maxIter=max_iter,
                        featuresCol="features").fit(refit)
         centroids = final.clusterCenters()
-        # the spread is re-measured on what the final model was fitted on
-        mu, sd = distance_spread(refit.withColumn("features_arr",
-                                                  vector_to_array("features")),
-                                 centroids)
-        logger.info("training distance after the refit: mean {:.4f}, deviation {:.4f}",
+        mu, sd = sigma_scale(_scored(refit.withColumn(
+            "features_arr", vector_to_array("features")), centroids, label)[1])
+        logger.info("scale of the refitted model: mean {:.4f}, deviation {:.4f}",
                     mu, sd)
-        y_test, s = _scored(vec_test, centroids, label, mu, sd)
+        y_test, d_test = _scored(vec_test, centroids, label)
+        s = in_sigmas(d_test, mu, sd)
         best_validation_on_test_set = metrics(y_test, s, best_threshold)
         logger.info("Best validation on test set:  AP {:.4f}, ROC-AUC {:.4f}, F1 {:.4f}", 
         best_validation_on_test_set["average_precision"], best_validation_on_test_set["roc_auc"], best_validation_on_test_set["f1"])
@@ -197,7 +190,7 @@ def train_k_means(
                 "spark_version": spark.version,
                 "score": "distance to the nearest centroid, in training deviations",
                 "k_sigma_candidates": sigmas,
-                "training_distance": {"mean": mu, "deviation": sd},
+                "spread": {"mean": mu, "deviation": sd},
                 "k_candidates": [int(k) for k in k_values],
                 "k_selected": k_star,
                 "selected_by": "validation AP",
@@ -234,7 +227,8 @@ def train_k_means(
              "k_sigma_candidates": sigmas, "max_iter": max_iter, "seed": seed},
             {"stage": "final", "selected_by": "validation AP",
              "refit_on": note, "refit_windows": int(n_refit),
-             "training_distance": {"mean": mu, "deviation": sd}})
+             "spread": {"mean": mu, "deviation": sd},
+             "cut_distance": mu + best_threshold * sd})
     finally:
         spark.stop()
 
