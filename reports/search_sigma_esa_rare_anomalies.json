@@ -1,0 +1,372 @@
+{
+  "model": "sigma",
+  "dataset": "esa",
+  "selected_on": "validation average precision",
+  "grid": {
+    "bits": [
+      16,
+      24
+    ],
+    "permutations": [
+      10,
+      20
+    ],
+    "band": [
+      20,
+      50
+    ],
+    "eps": [
+      7.54,
+      7.89
+    ],
+    "width_factor": [
+      1.0,
+      2.0
+    ],
+    "min_pts": [
+      10,
+      5
+    ],
+    "label_change_rate": [
+      0.05
+    ]
+  },
+  "runs": [
+    {
+      "config": {
+        "bits": 16,
+        "permutations": 10,
+        "band": 50,
+        "eps": 7.54,
+        "width_factor": 1.0,
+        "min_pts": 10,
+        "label_change_rate": 0.05
+      },
+      "epoch": 0,
+      "threshold": 3.0,
+      "validation": {
+        "roc_auc": 0.6552092800758257,
+        "average_precision": 0.30408548239951266,
+        "f1": 0.2857142857142857,
+        "segments_caught": 19,
+        "segments": 27
+      },
+      "edges": 38188
+    },
+    {
+      "config": {
+        "bits": 16,
+        "permutations": 20,
+        "band": 20,
+        "eps": 7.54,
+        "width_factor": 1.0,
+        "min_pts": 10,
+        "label_change_rate": 0.05
+      },
+      "epoch": 0,
+      "threshold": 3.0,
+      "validation": {
+        "roc_auc": 0.6554654115481252,
+        "average_precision": 0.30399374920023664,
+        "f1": 0.28604449581045943,
+        "segments_caught": 19,
+        "segments": 27
+      },
+      "edges": 36139
+    },
+    {
+      "config": {
+        "bits": 16,
+        "permutations": 10,
+        "band": 50,
+        "eps": 7.54,
+        "width_factor": 2.0,
+        "min_pts": 5,
+        "label_change_rate": 0.05
+      },
+      "epoch": 0,
+      "threshold": 3.0,
+      "validation": {
+        "roc_auc": 0.6465452576730181,
+        "average_precision": 0.29185439217964976,
+        "f1": 0.26117528879959817,
+        "segments_caught": 17,
+        "segments": 27
+      },
+      "edges": 43214
+    },
+    {
+      "config": {
+        "bits": 16,
+        "permutations": 20,
+        "band": 50,
+        "eps": 7.89,
+        "width_factor": 1.0,
+        "min_pts": 10,
+        "label_change_rate": 0.05
+      },
+      "epoch": 0,
+      "threshold": 3.5,
+      "validation": {
+        "roc_auc": 0.655626552880669,
+        "average_precision": 0.3014304407957608,
+        "f1": 0.2830094668659691,
+        "segments_caught": 17,
+        "segments": 27
+      },
+      "edges": 101768
+    },
+    {
+      "config": {
+        "bits": 16,
+        "permutations": 20,
+        "band": 20,
+        "eps": 7.89,
+        "width_factor": 1.0,
+        "min_pts": 5,
+        "label_change_rate": 0.05
+      },
+      "epoch": 0,
+      "threshold": 2.5,
+      "validation": {
+        "roc_auc": 0.6476438134363924,
+        "average_precision": 0.2897148997612413,
+        "f1": 0.24827913600759555,
+        "segments_caught": 21,
+        "segments": 27
+      },
+      "edges": 67172
+    },
+    {
+      "config": {
+        "bits": 16,
+        "permutations": 10,
+        "band": 20,
+        "eps": 7.54,
+        "width_factor": 2.0,
+        "min_pts": 10,
+        "label_change_rate": 0.05
+      },
+      "epoch": 0,
+      "threshold": 3.0,
+      "validation": {
+        "roc_auc": 0.6554667494374176,
+        "average_precision": 0.3042067982078034,
+        "f1": 0.29125596184419716,
+        "segments_caught": 19,
+        "segments": 27
+      },
+      "edges": 28408
+    },
+    {
+      "config": {
+        "bits": 16,
+        "permutations": 20,
+        "band": 50,
+        "eps": 7.89,
+        "width_factor": 2.0,
+        "min_pts": 10,
+        "label_change_rate": 0.05
+      },
+      "epoch": 0,
+      "threshold": 3.5,
+      "validation": {
+        "roc_auc": 0.6560170678996655,
+        "average_precision": 0.30156099426935645,
+        "f1": 0.28670291646070195,
+        "segments_caught": 18,
+        "segments": 27
+      },
+      "edges": 108846
+    },
+    {
+      "config": {
+        "bits": 24,
+        "permutations": 10,
+        "band": 50,
+        "eps": 7.54,
+        "width_factor": 1.0,
+        "min_pts": 10,
+        "label_change_rate": 0.05
+      },
+      "epoch": 0,
+      "threshold": 3.0,
+      "validation": {
+        "roc_auc": 0.6543797887145767,
+        "average_precision": 0.30405831881729267,
+        "f1": 0.28247602441150826,
+        "segments_caught": 19,
+        "segments": 27
+      },
+      "edges": 37244
+    },
+    {
+      "config": {
+        "bits": 24,
+        "permutations": 20,
+        "band": 50,
+        "eps": 7.54,
+        "width_factor": 2.0,
+        "min_pts": 10,
+        "label_change_rate": 0.05
+      },
+      "epoch": 0,
+      "threshold": 3.5,
+      "validation": {
+        "roc_auc": 0.6555052509181636,
+        "average_precision": 0.30381615629241354,
+        "f1": 0.28303850156087407,
+        "segments_caught": 17,
+        "segments": 27
+      },
+      "edges": 62193
+    },
+    {
+      "config": {
+        "bits": 16,
+        "permutations": 20,
+        "band": 50,
+        "eps": 7.89,
+        "width_factor": 1.0,
+        "min_pts": 5,
+        "label_change_rate": 0.05
+      },
+      "epoch": 0,
+      "threshold": 2.5,
+      "validation": {
+        "roc_auc": 0.6476415836209052,
+        "average_precision": 0.2895196090592872,
+        "f1": 0.24994160242933894,
+        "segments_caught": 21,
+        "segments": 27
+      },
+      "edges": 101768
+    },
+    {
+      "config": {
+        "bits": 24,
+        "permutations": 10,
+        "band": 20,
+        "eps": 7.54,
+        "width_factor": 1.0,
+        "min_pts": 10,
+        "label_change_rate": 0.05
+      },
+      "epoch": 0,
+      "threshold": 3.0,
+      "validation": {
+        "roc_auc": 0.6541443201991254,
+        "average_precision": 0.3028545947807666,
+        "f1": 0.2973782771535581,
+        "segments_caught": 19,
+        "segments": 27
+      },
+      "edges": 23989
+    },
+    {
+      "config": {
+        "bits": 24,
+        "permutations": 20,
+        "band": 20,
+        "eps": 7.89,
+        "width_factor": 2.0,
+        "min_pts": 10,
+        "label_change_rate": 0.05
+      },
+      "epoch": 0,
+      "threshold": 3.5,
+      "validation": {
+        "roc_auc": 0.6557393815443227,
+        "average_precision": 0.3015377225498276,
+        "f1": 0.2814221331997997,
+        "segments_caught": 17,
+        "segments": 27
+      },
+      "edges": 81935
+    },
+    {
+      "config": {
+        "bits": 16,
+        "permutations": 20,
+        "band": 20,
+        "eps": 7.54,
+        "width_factor": 2.0,
+        "min_pts": 10,
+        "label_change_rate": 0.05
+      },
+      "epoch": 0,
+      "threshold": 3.5,
+      "validation": {
+        "roc_auc": 0.6556443914045667,
+        "average_precision": 0.30426561046347306,
+        "f1": 0.2807606263982103,
+        "segments_caught": 16,
+        "segments": 27
+      },
+      "edges": 39706
+    },
+    {
+      "config": {
+        "bits": 24,
+        "permutations": 10,
+        "band": 20,
+        "eps": 7.89,
+        "width_factor": 2.0,
+        "min_pts": 10,
+        "label_change_rate": 0.05
+      },
+      "epoch": 0,
+      "threshold": 3.5,
+      "validation": {
+        "roc_auc": 0.6565306687335569,
+        "average_precision": 0.3050156525629588,
+        "f1": 0.28556593977154726,
+        "segments_caught": 16,
+        "segments": 27
+      },
+      "edges": 55699
+    },
+    {
+      "config": {
+        "bits": 24,
+        "permutations": 20,
+        "band": 20,
+        "eps": 7.54,
+        "width_factor": 1.0,
+        "min_pts": 10,
+        "label_change_rate": 0.05
+      },
+      "epoch": 0,
+      "threshold": 3.0,
+      "validation": {
+        "roc_auc": 0.6554156123355771,
+        "average_precision": 0.30421219708295844,
+        "f1": 0.28604992657856093,
+        "segments_caught": 19,
+        "segments": 27
+      },
+      "edges": 36744
+    }
+  ],
+  "best": {
+    "config": {
+      "bits": 24,
+      "permutations": 10,
+      "band": 20,
+      "eps": 7.89,
+      "width_factor": 2.0,
+      "min_pts": 10,
+      "label_change_rate": 0.05
+    },
+    "epoch": 0,
+    "threshold": 3.5,
+    "validation": {
+      "roc_auc": 0.6565306687335569,
+      "average_precision": 0.3050156525629588,
+      "f1": 0.28556593977154726,
+      "segments_caught": 16,
+      "segments": 27
+    },
+    "edges": 55699
+  }
+}

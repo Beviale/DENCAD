@@ -1,0 +1,74 @@
+{
+  "model": "ego autoencoder",
+  "dataset": "esa",
+  "threshold": 2.5,
+  "config": {
+    "window_steps": 132,
+    "eps": 6.34,
+    "width": 6.34,
+    "bits": 24,
+    "permutations": 20,
+    "band": 20,
+    "width_factor": 1.0,
+    "hidden": 128,
+    "latent": 16,
+    "layers": 3,
+    "learning_rate": 0.003,
+    "batch_size": 128,
+    "patience": 20,
+    "mask_centre": false,
+    "seed": 42
+  },
+  "metrics": {
+    "validation": {
+      "rows": 8509,
+      "positives": 294,
+      "base_rate": 0.034551651192854624,
+      "roc_auc": 0.7095979231619611,
+      "average_precision": 0.2057234553543809,
+      "threshold": 2.5,
+      "flagged": 32,
+      "flagged_share": 0.0037607239393583265,
+      "precision": 0.9375,
+      "recall": 0.10204081632653061,
+      "f1": 0.18404907975460122,
+      "segments": 17,
+      "segments_caught": 6,
+      "segment_recall": 0.35294117647058826
+    },
+    "test": {
+      "rows": 8629,
+      "positives": 136,
+      "base_rate": 0.015760806582454514,
+      "roc_auc": 0.6132195371967226,
+      "average_precision": 0.03836473909501065,
+      "threshold": 2.5,
+      "flagged": 2022,
+      "flagged_share": 0.2343261096303164,
+      "precision": 0.033135509396636995,
+      "recall": 0.49264705882352944,
+      "f1": 0.06209453197405004,
+      "segments": 15,
+      "segments_caught": 12,
+      "segment_recall": 0.8
+    }
+  },
+  "stage": "final",
+  "epoch": 37,
+  "train_loss": 0.5569843814327344,
+  "spread": {
+    "mean": 0.5569843814327344,
+    "deviation": 1.2464215275159454
+  },
+  "graph": {
+    "edges": 101243,
+    "ball_mean": 176.2268989732877,
+    "ball_max": 2210
+  },
+  "windows": {
+    "train": 44998,
+    "validation": 8509,
+    "test": 8629
+  },
+  "finished_at": "2026-11-03T03:32:37+00:00"
+}

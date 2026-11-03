@@ -1,0 +1,68 @@
+{
+  "model": "DENCAST + sigma",
+  "dataset": "esa",
+  "threshold": 3.0,
+  "config": {
+    "window_steps": 132,
+    "eps": 6.06,
+    "width": 12.12,
+    "bits": 16,
+    "permutations": 20,
+    "band": 20,
+    "min_pts": 10,
+    "label_change_rate": 0.05,
+    "attach_to": "clustered",
+    "seed": 42
+  },
+  "metrics": {
+    "validation": {
+      "rows": 8509,
+      "positives": 294,
+      "base_rate": 0.034551651192854624,
+      "roc_auc": 0.6932237776425239,
+      "average_precision": 0.16451393782646684,
+      "threshold": 3.0,
+      "flagged": 43,
+      "flagged_share": 0.005053472793512751,
+      "precision": 0.7209302325581395,
+      "recall": 0.1054421768707483,
+      "f1": 0.18397626112759644,
+      "segments": 17,
+      "segments_caught": 7,
+      "segment_recall": 0.4117647058823529
+    },
+    "test": {
+      "rows": 8629,
+      "positives": 136,
+      "base_rate": 0.015760806582454514,
+      "roc_auc": 0.6289600085883877,
+      "average_precision": 0.03902105740020205,
+      "threshold": 3.0,
+      "flagged": 4952,
+      "flagged_share": 0.5738787808552556,
+      "precision": 0.014337641357027463,
+      "recall": 0.5220588235294118,
+      "f1": 0.02790880503144654,
+      "segments": 15,
+      "segments_caught": 13,
+      "segment_recall": 0.8666666666666667
+    }
+  },
+  "stage": "final",
+  "k_sigma": 3.0,
+  "cut_distance": 27.587018218555606,
+  "spread": {
+    "mean": 6.8640601491842395,
+    "deviation": 6.9076526897904555
+  },
+  "windows": {
+    "train": 44998,
+    "validation": 8509,
+    "test": 8629
+  },
+  "graph": {
+    "edges": 60045,
+    "clusters": 160
+  },
+  "finished_at": "2026-11-01T03:50:56+00:00"
+}

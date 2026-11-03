@@ -72,7 +72,8 @@ class EgoGraph:
     def of_node(self, node: int) -> ContextualSubgraph:
         """A node of the graph, reconstructed inside its own ball."""
         idx = self._grow(np.array([node], dtype="int64"), self.hops)
-        return ContextualSubgraph(features=self.X[idx], edges=self._inside(idx),
+        return ContextualSubgraph(source=self.X, nodes=idx,
+                                  edges=self._inside(idx),
                                   centre=int(np.flatnonzero(idx == node)[0]),
                                   degrees=1.0 + self.degree[idx])
 
@@ -82,9 +83,11 @@ class EgoGraph:
         v = np.asarray(vector, dtype="float32")
         nbr = np.unique(np.asarray(neighbours, dtype="int64"))
         if not len(nbr):
-            return ContextualSubgraph(features=v[None, :],
+            return ContextualSubgraph(source=self.X,
+                                      nodes=np.zeros(0, dtype="int64"),
                                       edges=np.zeros((0, 2), dtype="int64"),
-                                      centre=0, degrees=np.ones(1, dtype="float32"))
+                                      centre=0, centre_features=v,
+                                      degrees=np.ones(1, dtype="float32"))
         idx = self._grow(nbr, self.hops - 1)
         inside = self._inside(idx)
         self._pos[idx] = np.arange(len(idx))
@@ -98,8 +101,9 @@ class EgoGraph:
         degrees[:centre] = 1.0 + self.degree[idx]
         degrees[hooked] += 1.0                    # the edge the query brings
         degrees[centre] = 1.0 + len(nbr)
-        return ContextualSubgraph(features=np.vstack([self.X[idx], v[None, :]]),
-                                  edges=edges, centre=centre, degrees=degrees)
+        return ContextualSubgraph(source=self.X, nodes=idx, edges=edges,
+                                  centre=centre, centre_features=v,
+                                  degrees=degrees)
 
 
 __all__ = ["EgoGraph"]

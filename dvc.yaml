@@ -164,6 +164,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/swat --model dencad --runs 15
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_dencad.py
       - dencad/modeling/lsh.py
       - dencad/modeling/clustering.py
@@ -215,6 +216,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/swat --model plain --runs 16
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_plain.py
       - dencad/modeling/train_dencad.py
       - dencad/modeling/subgraphs.py
@@ -258,6 +260,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/swat --model sigma --runs 15
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_sigma.py
       - dencad/modeling/train_dencad.py
       - dencad/modeling/lsh.py
@@ -330,6 +333,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/hai --model dencad --runs 15
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_dencad.py
       - dencad/modeling/lsh.py
       - dencad/modeling/clustering.py
@@ -381,6 +385,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/hai --model plain --runs 16
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_plain.py
       - dencad/modeling/train_dencad.py
       - dencad/modeling/subgraphs.py
@@ -424,6 +429,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/hai --model sigma --runs 15
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_sigma.py
       - dencad/modeling/train_dencad.py
       - dencad/modeling/lsh.py
@@ -496,6 +502,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/esa_rare_anomalies --model dencad --runs 15
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_dencad.py
       - dencad/modeling/lsh.py
       - dencad/modeling/clustering.py
@@ -547,6 +554,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/esa_rare_anomalies --model plain --runs 16
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_plain.py
       - dencad/modeling/train_dencad.py
       - dencad/modeling/subgraphs.py
@@ -590,6 +598,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/esa_rare_anomalies --model sigma --runs 15
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_sigma.py
       - dencad/modeling/train_dencad.py
       - dencad/modeling/lsh.py
@@ -662,6 +671,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/esa_rare_anomalies_contaminated --model dencad --runs 15
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_dencad.py
       - dencad/modeling/lsh.py
       - dencad/modeling/clustering.py
@@ -713,6 +723,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/esa_rare_anomalies_contaminated --model plain --runs 16
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_plain.py
       - dencad/modeling/train_dencad.py
       - dencad/modeling/subgraphs.py
@@ -756,6 +767,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/esa_rare_anomalies_contaminated --model sigma --runs 15
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_sigma.py
       - dencad/modeling/train_dencad.py
       - dencad/modeling/lsh.py
@@ -828,6 +840,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/esa_anomalies --model dencad --runs 15
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_dencad.py
       - dencad/modeling/lsh.py
       - dencad/modeling/clustering.py
@@ -879,6 +892,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/esa_anomalies --model plain --runs 16
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_plain.py
       - dencad/modeling/train_dencad.py
       - dencad/modeling/subgraphs.py
@@ -922,6 +936,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/esa_anomalies --model sigma --runs 15
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_sigma.py
       - dencad/modeling/train_dencad.py
       - dencad/modeling/lsh.py
@@ -994,6 +1009,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/esa_anomalies_contaminated --model dencad --runs 15
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_dencad.py
       - dencad/modeling/lsh.py
       - dencad/modeling/clustering.py
@@ -1045,6 +1061,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/esa_anomalies_contaminated --model plain --runs 16
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_plain.py
       - dencad/modeling/train_dencad.py
       - dencad/modeling/subgraphs.py
@@ -1088,6 +1105,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/esa_anomalies_contaminated --model sigma --runs 15
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_sigma.py
       - dencad/modeling/train_dencad.py
       - dencad/modeling/lsh.py
@@ -1160,6 +1178,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/swat --model ego --runs 15
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_ego.py
       - dencad/modeling/ego.py
       - dencad/modeling/subgraphs.py
@@ -1209,6 +1228,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/hai --model ego --runs 15
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_ego.py
       - dencad/modeling/ego.py
       - dencad/modeling/subgraphs.py
@@ -1258,6 +1278,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/esa_rare_anomalies --model ego --runs 15
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_ego.py
       - dencad/modeling/ego.py
       - dencad/modeling/subgraphs.py
@@ -1307,6 +1328,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/esa_rare_anomalies_contaminated --model ego --runs 15
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_ego.py
       - dencad/modeling/ego.py
       - dencad/modeling/subgraphs.py
@@ -1356,6 +1378,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/esa_anomalies --model ego --runs 15
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_ego.py
       - dencad/modeling/ego.py
       - dencad/modeling/subgraphs.py
@@ -1405,6 +1428,7 @@ stages:
     cmd: python -m dencad.modeling.search --split_dir data/processed/esa_anomalies_contaminated --model ego --runs 15
     deps:
       - dencad/modeling/search.py
+      - dencad/modeling/run_one.py
       - dencad/modeling/train_ego.py
       - dencad/modeling/ego.py
       - dencad/modeling/subgraphs.py

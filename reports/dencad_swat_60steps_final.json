@@ -1,0 +1,77 @@
+{
+  "model": "DENCAD",
+  "dataset": "swat",
+  "threshold": 1.5,
+  "config": {
+    "window_steps": 60,
+    "eps": 1.52,
+    "width": 3.04,
+    "bits": 16,
+    "permutations": 20,
+    "band": 20,
+    "min_pts": 10,
+    "label_change_rate": 0.05,
+    "attach_to": "clustered",
+    "max_members": 500,
+    "mask_centre": false,
+    "hidden": 128,
+    "latent": 16,
+    "layers": 2,
+    "learning_rate": 0.003,
+    "batch_size": 128,
+    "patience": 20,
+    "replicas": 4,
+    "seed": 42
+  },
+  "metrics": {
+    "validation": {
+      "rows": 3749,
+      "positives": 219,
+      "base_rate": 0.05841557748732996,
+      "roc_auc": 0.7882313373950611,
+      "average_precision": 0.43449931365928196,
+      "threshold": 1.5,
+      "flagged": 80,
+      "flagged_share": 0.021339023739663912,
+      "precision": 0.8875,
+      "recall": 0.3242009132420091,
+      "f1": 0.47491638795986624,
+      "segments": 20,
+      "segments_caught": 13,
+      "segment_recall": 0.65
+    },
+    "test": {
+      "rows": 3750,
+      "positives": 728,
+      "base_rate": 0.19413333333333332,
+      "roc_auc": 0.9238710082108493,
+      "average_precision": 0.8484020314351036,
+      "threshold": 1.5,
+      "flagged": 652,
+      "flagged_share": 0.17386666666666667,
+      "precision": 0.8895705521472392,
+      "recall": 0.7967032967032966,
+      "f1": 0.8405797101449275,
+      "segments": 13,
+      "segments_caught": 11,
+      "segment_recall": 0.8461538461538461
+    }
+  },
+  "stage": "final",
+  "epoch": 23,
+  "train_loss": 0.15193645656108856,
+  "spread": {
+    "mean": 0.2533752669679321,
+    "deviation": 0.35834662120890637
+  },
+  "windows": {
+    "train": 11810,
+    "validation": 3749,
+    "test": 3750
+  },
+  "graph": {
+    "edges": 47949,
+    "clusters": 48
+  },
+  "finished_at": "2026-10-30T12:08:11+00:00"
+}

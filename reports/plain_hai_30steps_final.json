@@ -1,0 +1,63 @@
+{
+  "model": "plain autoencoder",
+  "dataset": "hai",
+  "threshold": 4.0,
+  "config": {
+    "window_steps": 30,
+    "hidden": 128,
+    "latent": 32,
+    "layers": 2,
+    "learning_rate": 0.001,
+    "batch_size": 128,
+    "patience": 20,
+    "mask_centre": false,
+    "seed": 42
+  },
+  "metrics": {
+    "validation": {
+      "rows": 3840,
+      "positives": 137,
+      "base_rate": 0.03567708333333333,
+      "roc_auc": 0.7027622109514677,
+      "average_precision": 0.24686725719845984,
+      "threshold": 4.0,
+      "flagged": 63,
+      "flagged_share": 0.01640625,
+      "precision": 0.49206349206349204,
+      "recall": 0.22627737226277372,
+      "f1": 0.31,
+      "segments": 19,
+      "segments_caught": 9,
+      "segment_recall": 0.47368421052631576
+    },
+    "test": {
+      "rows": 3840,
+      "positives": 169,
+      "base_rate": 0.04401041666666667,
+      "roc_auc": 0.8405671189025128,
+      "average_precision": 0.5971988336310796,
+      "threshold": 4.0,
+      "flagged": 1247,
+      "flagged_share": 0.32473958333333336,
+      "precision": 0.10505212510024058,
+      "recall": 0.7751479289940828,
+      "f1": 0.1850282485875706,
+      "segments": 19,
+      "segments_caught": 14,
+      "segment_recall": 0.7368421052631579
+    }
+  },
+  "stage": "final",
+  "epoch": 142,
+  "train_loss": 0.21640892094939324,
+  "spread": {
+    "mean": 0.21640892094939324,
+    "deviation": 0.06583645184349111
+  },
+  "windows": {
+    "train": 22783,
+    "validation": 3840,
+    "test": 3840
+  },
+  "finished_at": "2026-10-27T02:26:43+00:00"
+}

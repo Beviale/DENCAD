@@ -1,0 +1,76 @@
+{
+  "model": "KMeans + sigma",
+  "dataset": "esa",
+  "threshold": 4.0,
+  "config": {
+    "window_steps": 132,
+    "k": 32,
+    "k_candidates": [
+      2,
+      4,
+      8,
+      16,
+      32,
+      64
+    ],
+    "k_sigma_candidates": [
+      0.5,
+      0.75,
+      1.0,
+      1.25,
+      1.5,
+      2.0,
+      2.5,
+      3.0,
+      3.5,
+      4.0
+    ],
+    "max_iter": 50,
+    "seed": 42
+  },
+  "metrics": {
+    "validation": {
+      "k": 32,
+      "rows": 8509,
+      "positives": 294,
+      "base_rate": 0.034551651192854624,
+      "roc_auc": 0.634708783087185,
+      "average_precision": 0.13430114964052092,
+      "threshold": 4.0,
+      "flagged": 55,
+      "flagged_share": 0.006463744270772124,
+      "precision": 0.7272727272727273,
+      "recall": 0.10884353741496598,
+      "f1": 0.1893491124260355,
+      "segments": 17,
+      "segments_caught": 9,
+      "segment_recall": 0.5294117647058824
+    },
+    "test": {
+      "rows": 8629,
+      "positives": 136,
+      "base_rate": 0.015760806582454514,
+      "roc_auc": 0.6065557448694772,
+      "average_precision": 0.03153508180547727,
+      "threshold": 4.0,
+      "flagged": 4952,
+      "flagged_share": 0.5738787808552556,
+      "precision": 0.014337641357027463,
+      "recall": 0.5220588235294118,
+      "f1": 0.02790880503144654,
+      "segments": 15,
+      "segments_caught": 13,
+      "segment_recall": 0.8666666666666667
+    }
+  },
+  "stage": "final",
+  "selected_by": "validation AP",
+  "refit_on": "train + the normal windows of validation",
+  "refit_windows": 44998,
+  "spread": {
+    "mean": 7.549740641737605,
+    "deviation": 4.416030599792117
+  },
+  "cut_distance": 25.213863040906077,
+  "finished_at": "2026-11-01T03:55:03+00:00"
+}

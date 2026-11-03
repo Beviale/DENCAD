@@ -1,0 +1,371 @@
+{
+  "model": "plain",
+  "dataset": "esa",
+  "selected_on": "validation average precision",
+  "grid": {
+    "hidden": [
+      64,
+      128
+    ],
+    "latent": [
+      16,
+      32
+    ],
+    "layers": [
+      2,
+      3
+    ],
+    "learning_rate": [
+      0.001,
+      0.003
+    ],
+    "batch_size": [
+      128
+    ],
+    "patience": [
+      20
+    ]
+  },
+  "runs": [
+    {
+      "config": {
+        "hidden": 64,
+        "latent": 16,
+        "layers": 2,
+        "learning_rate": 0.001,
+        "batch_size": 128,
+        "patience": 20
+      },
+      "epoch": 2,
+      "threshold": 3.0,
+      "validation": {
+        "roc_auc": 0.5835285544528219,
+        "average_precision": 0.1259915936115778,
+        "f1": 0.2,
+        "segments_caught": 9,
+        "segments": 17
+      },
+      "edges": 0
+    },
+    {
+      "config": {
+        "hidden": 64,
+        "latent": 16,
+        "layers": 2,
+        "learning_rate": 0.003,
+        "batch_size": 128,
+        "patience": 20
+      },
+      "epoch": 18,
+      "threshold": 3.0,
+      "validation": {
+        "roc_auc": 0.578330041694097,
+        "average_precision": 0.13209411366015167,
+        "f1": 0.18823529411764706,
+        "segments_caught": 7,
+        "segments": 17
+      },
+      "edges": 0
+    },
+    {
+      "config": {
+        "hidden": 64,
+        "latent": 16,
+        "layers": 3,
+        "learning_rate": 0.001,
+        "batch_size": 128,
+        "patience": 20
+      },
+      "epoch": 2,
+      "threshold": 3.0,
+      "validation": {
+        "roc_auc": 0.5970967327892813,
+        "average_precision": 0.12640011273086782,
+        "f1": 0.19883040935672514,
+        "segments_caught": 9,
+        "segments": 17
+      },
+      "edges": 0
+    },
+    {
+      "config": {
+        "hidden": 64,
+        "latent": 16,
+        "layers": 3,
+        "learning_rate": 0.003,
+        "batch_size": 128,
+        "patience": 20
+      },
+      "epoch": 1,
+      "threshold": 2.5,
+      "validation": {
+        "roc_auc": 0.6210813966487387,
+        "average_precision": 0.13962048303617713,
+        "f1": 0.19883040935672514,
+        "segments_caught": 9,
+        "segments": 17
+      },
+      "edges": 0
+    },
+    {
+      "config": {
+        "hidden": 64,
+        "latent": 32,
+        "layers": 2,
+        "learning_rate": 0.001,
+        "batch_size": 128,
+        "patience": 20
+      },
+      "epoch": 2,
+      "threshold": 3.0,
+      "validation": {
+        "roc_auc": 0.5908531763283524,
+        "average_precision": 0.12535963948110299,
+        "f1": 0.2,
+        "segments_caught": 9,
+        "segments": 17
+      },
+      "edges": 0
+    },
+    {
+      "config": {
+        "hidden": 64,
+        "latent": 32,
+        "layers": 2,
+        "learning_rate": 0.003,
+        "batch_size": 128,
+        "patience": 20
+      },
+      "epoch": 20,
+      "threshold": 3.5,
+      "validation": {
+        "roc_auc": 0.6380919257538683,
+        "average_precision": 0.1331320721622316,
+        "f1": 0.19318181818181818,
+        "segments_caught": 9,
+        "segments": 17
+      },
+      "edges": 0
+    },
+    {
+      "config": {
+        "hidden": 64,
+        "latent": 32,
+        "layers": 3,
+        "learning_rate": 0.001,
+        "batch_size": 128,
+        "patience": 20
+      },
+      "epoch": 1,
+      "threshold": 2.5,
+      "validation": {
+        "roc_auc": 0.6111514112644449,
+        "average_precision": 0.13654290003796085,
+        "f1": 0.2132564841498559,
+        "segments_caught": 9,
+        "segments": 17
+      },
+      "edges": 0
+    },
+    {
+      "config": {
+        "hidden": 64,
+        "latent": 32,
+        "layers": 3,
+        "learning_rate": 0.003,
+        "batch_size": 128,
+        "patience": 20
+      },
+      "epoch": 1,
+      "threshold": 3.5,
+      "validation": {
+        "roc_auc": 0.5894775195531652,
+        "average_precision": 0.13463978382243508,
+        "f1": 0.1893491124260355,
+        "segments_caught": 7,
+        "segments": 17
+      },
+      "edges": 0
+    },
+    {
+      "config": {
+        "hidden": 128,
+        "latent": 16,
+        "layers": 2,
+        "learning_rate": 0.001,
+        "batch_size": 128,
+        "patience": 20
+      },
+      "epoch": 1,
+      "threshold": 2.5,
+      "validation": {
+        "roc_auc": 0.6045275566099843,
+        "average_precision": 0.13839357350412085,
+        "f1": 0.2177650429799427,
+        "segments_caught": 9,
+        "segments": 17
+      },
+      "edges": 0
+    },
+    {
+      "config": {
+        "hidden": 128,
+        "latent": 16,
+        "layers": 2,
+        "learning_rate": 0.003,
+        "batch_size": 128,
+        "patience": 20
+      },
+      "epoch": 55,
+      "threshold": 1.25,
+      "validation": {
+        "roc_auc": 0.6032549964599352,
+        "average_precision": 0.14492921594567731,
+        "f1": 0.09496264160038563,
+        "segments_caught": 16,
+        "segments": 17
+      },
+      "edges": 0
+    },
+    {
+      "config": {
+        "hidden": 128,
+        "latent": 16,
+        "layers": 3,
+        "learning_rate": 0.001,
+        "batch_size": 128,
+        "patience": 20
+      },
+      "epoch": 1,
+      "threshold": 2.5,
+      "validation": {
+        "roc_auc": 0.6139733190902654,
+        "average_precision": 0.13520129801809364,
+        "f1": 0.2032967032967033,
+        "segments_caught": 9,
+        "segments": 17
+      },
+      "edges": 0
+    },
+    {
+      "config": {
+        "hidden": 128,
+        "latent": 16,
+        "layers": 3,
+        "learning_rate": 0.003,
+        "batch_size": 128,
+        "patience": 20
+      },
+      "epoch": 16,
+      "threshold": 3.0,
+      "validation": {
+        "roc_auc": 0.649506254114549,
+        "average_precision": 0.14144425618651385,
+        "f1": 0.19839142091152814,
+        "segments_caught": 9,
+        "segments": 17
+      },
+      "edges": 0
+    },
+    {
+      "config": {
+        "hidden": 128,
+        "latent": 32,
+        "layers": 2,
+        "learning_rate": 0.001,
+        "batch_size": 128,
+        "patience": 20
+      },
+      "epoch": 1,
+      "threshold": 2.5,
+      "validation": {
+        "roc_auc": 0.6307072676910082,
+        "average_precision": 0.13563273724635214,
+        "f1": 0.19576719576719576,
+        "segments_caught": 9,
+        "segments": 17
+      },
+      "edges": 0
+    },
+    {
+      "config": {
+        "hidden": 128,
+        "latent": 32,
+        "layers": 2,
+        "learning_rate": 0.003,
+        "batch_size": 128,
+        "patience": 20
+      },
+      "epoch": 1,
+      "threshold": 2.5,
+      "validation": {
+        "roc_auc": 0.6322294955718136,
+        "average_precision": 0.13711467583408093,
+        "f1": 0.2,
+        "segments_caught": 9,
+        "segments": 17
+      },
+      "edges": 0
+    },
+    {
+      "config": {
+        "hidden": 128,
+        "latent": 32,
+        "layers": 3,
+        "learning_rate": 0.001,
+        "batch_size": 128,
+        "patience": 20
+      },
+      "epoch": 1,
+      "threshold": 2.5,
+      "validation": {
+        "roc_auc": 0.6183387779944601,
+        "average_precision": 0.1349830638883404,
+        "f1": 0.20612813370473537,
+        "segments_caught": 9,
+        "segments": 17
+      },
+      "edges": 0
+    },
+    {
+      "config": {
+        "hidden": 128,
+        "latent": 32,
+        "layers": 3,
+        "learning_rate": 0.003,
+        "batch_size": 128,
+        "patience": 20
+      },
+      "epoch": 23,
+      "threshold": 3.5,
+      "validation": {
+        "roc_auc": 0.6397487175028258,
+        "average_precision": 0.13601188640336037,
+        "f1": 0.1893491124260355,
+        "segments_caught": 7,
+        "segments": 17
+      },
+      "edges": 0
+    }
+  ],
+  "best": {
+    "config": {
+      "hidden": 128,
+      "latent": 16,
+      "layers": 2,
+      "learning_rate": 0.003,
+      "batch_size": 128,
+      "patience": 20
+    },
+    "epoch": 55,
+    "threshold": 1.25,
+    "validation": {
+      "roc_auc": 0.6032549964599352,
+      "average_precision": 0.14492921594567731,
+      "f1": 0.09496264160038563,
+      "segments_caught": 16,
+      "segments": 17
+    },
+    "edges": 0
+  }
+}

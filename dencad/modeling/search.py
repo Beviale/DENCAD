@@ -6,6 +6,9 @@ from __future__ import annotations
 import argparse
 import itertools
 import json
+import subprocess
+import sys
+import tempfile
 from pathlib import Path
 from typing import Optional
 
@@ -41,6 +44,25 @@ def plan(grid: dict[str, list], runs: int, seed: int = 42) -> list[dict]:
             seen.add(key)
             out.append(draw)
     return out
+
+
+def _apart(model: str, split_dir: Path, reports_dir: Path,
+           window_steps: Optional[int], config: dict) -> dict:
+    """One configuration, in its own interpreter, with its output left on the console."""
+
+    tmp = Path(tempfile.mkdtemp(prefix="dencad_run_"))
+    cfg_file, out_file = tmp / "config.json", tmp / "report.json"
+    cfg_file.write_text(json.dumps({**config, "_window_steps": window_steps},
+                                   default=str), encoding="utf-8")
+    done = subprocess.run([sys.executable, "-m", "dencad.modeling.run_one", model,
+                           str(split_dir), str(reports_dir), str(cfg_file),
+                           str(out_file)])
+    if not out_file.exists():
+        raise RuntimeError(f"the run died without reporting, exit {done.returncode}")
+    report = json.loads(out_file.read_text(encoding="utf-8"))
+    if "failed" in report:
+        raise RuntimeError(report["failed"])
+    return report
 
 
 def _write(reports_dir: Path, split_dir: Path, dataset: str,
@@ -84,11 +106,12 @@ def search(split_dir: Path | str, reports_dir: Path | str = Path("reports"),
         logger.info("[{}/{}] {}", i, len(drawn),
                     ", ".join(f"{k}={v}" for k, v in config.items()))
         try:
-            report = trainer(split_dir, reports_dir / "select",
-                             window_steps=window_steps, stage="select", **config)
+            report = _apart(model, split_dir, reports_dir / "select",
+                            window_steps, config)
         except Exception as exc:
             logger.warning("  failed: {}: {}", type(exc).__name__, exc)
             rows.append({"config": config, "failed": f"{type(exc).__name__}: {exc}"})
+            out = _write(reports_dir, split_dir, dataset, grid, rows, model)
             continue
         val = report["metrics"]["validation"]
         rows.append({

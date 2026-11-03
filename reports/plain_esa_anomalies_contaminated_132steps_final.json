@@ -1,0 +1,63 @@
+{
+  "model": "plain autoencoder",
+  "dataset": "esa",
+  "threshold": 1.25,
+  "config": {
+    "window_steps": 132,
+    "hidden": 64,
+    "latent": 16,
+    "layers": 3,
+    "learning_rate": 0.003,
+    "batch_size": 128,
+    "patience": 20,
+    "mask_centre": false,
+    "seed": 42
+  },
+  "metrics": {
+    "validation": {
+      "rows": 8509,
+      "positives": 294,
+      "base_rate": 0.034551651192854624,
+      "roc_auc": 0.6824361028647613,
+      "average_precision": 0.12534274012093294,
+      "threshold": 1.25,
+      "flagged": 26,
+      "flagged_share": 0.0030555882007286404,
+      "precision": 0.4230769230769231,
+      "recall": 0.03741496598639456,
+      "f1": 0.06875,
+      "segments": 17,
+      "segments_caught": 6,
+      "segment_recall": 0.35294117647058826
+    },
+    "test": {
+      "rows": 8629,
+      "positives": 136,
+      "base_rate": 0.015760806582454514,
+      "roc_auc": 0.606314196466294,
+      "average_precision": 0.025286249790670817,
+      "threshold": 1.25,
+      "flagged": 4954,
+      "flagged_share": 0.5741105574226446,
+      "precision": 0.014331853048041986,
+      "recall": 0.5220588235294118,
+      "f1": 0.027897838899803535,
+      "segments": 15,
+      "segments_caught": 13,
+      "segment_recall": 0.8666666666666667
+    }
+  },
+  "stage": "final",
+  "epoch": 18,
+  "train_loss": 0.41029620480724116,
+  "spread": {
+    "mean": 0.41029620480724116,
+    "deviation": 0.54807422786321
+  },
+  "windows": {
+    "train": 46866,
+    "validation": 8509,
+    "test": 8629
+  },
+  "finished_at": "2026-10-28T23:07:09+00:00"
+}

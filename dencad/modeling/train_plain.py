@@ -27,8 +27,9 @@ PARTS = ("train", "validation", "test")
 
 def _alone(x: np.ndarray) -> ContextualSubgraph:
     """One window as its own subgraph: no neighbours, so A_hat is the identity."""
-    return ContextualSubgraph(features=np.asarray(x, dtype="float32")[None, :],
-                              edges=np.zeros((0, 2), dtype="int32"), centre=0)
+    return ContextualSubgraph(source=None, nodes=np.zeros(0, dtype="int64"),
+                              edges=np.zeros((0, 2), dtype="int32"), centre=0,
+                              centre_features=np.asarray(x, dtype="float32"))
 
 
 def _egos(win, features) -> tuple[np.ndarray, list]:

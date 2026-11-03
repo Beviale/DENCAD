@@ -17,12 +17,28 @@ import numpy as np
 
 @dataclass
 class ContextualSubgraph:
-    """One example: node features, its undirected edges, and which row is the centre."""
 
-    features: np.ndarray          # (m, d), the centre last
+
+    source: Optional[np.ndarray]  # (n, d), the matrix the members are rows of
+    nodes: np.ndarray             # (m,), which of its rows, in order
     edges: np.ndarray             # (e, 2), one row per undirected edge, no self-loops
     centre: int                   # index of the centre, always m - 1
+    centre_features: Optional[np.ndarray] = None   # when it is not one of the rows
     degrees: Optional[np.ndarray] = None
+
+    @property
+    def size(self) -> int:
+        """Nodes in the example, the centre included."""
+        return len(self.nodes) + (0 if self.centre_features is None else 1)
+
+    @property
+    def features(self) -> np.ndarray:
+        """(m, d) with the centre last, gathered on demand."""
+        if self.centre_features is None:
+            return self.source[self.nodes]
+        if not len(self.nodes):
+            return self.centre_features[None, :]
+        return np.vstack([self.source[self.nodes], self.centre_features[None, :]])
 
 
 class ContextualSubgraphBuilder:
@@ -141,10 +157,9 @@ class ContextualSubgraphBuilder:
         pairs[:len(a), 0], pairs[:len(a), 1] = a, b
         pairs[len(a):, 0], pairs[len(a):, 1] = k, hooked
 
-        features = np.vstack([self.X[idx[keep]],
-                              vector.astype("float32")[None, :]])
         return ContextualSubgraph(
-            features=features, edges=pairs, centre=k,
+            source=self.X, nodes=idx[keep], edges=pairs, centre=k,
+            centre_features=vector.astype("float32"),
             degrees=(np.concatenate([degrees[keep], degrees[m:]])
                      if pruned or self.node_degrees is not None else None))
 

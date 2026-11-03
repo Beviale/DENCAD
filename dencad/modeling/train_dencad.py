@@ -112,7 +112,7 @@ CHUNK_FLOATS = 16 * 1024 * 1024
 def _chunks(egos, indices, size: int):
     chunk: list = []
     for i in indices:
-        m = len(egos[i].features)
+        m = egos[i].size
         if chunk and ((len(chunk) + 1) * m * m > CHUNK_FLOATS or len(chunk) >= size):
             yield chunk
             chunk = []
@@ -121,47 +121,63 @@ def _chunks(egos, indices, size: int):
         yield chunk
 
 
-def batches(egos, indices, d: int, size: int, mask_centre: bool) -> list:
-    """Padded batches of similar-sized contextual subgraphs, built once."""
+def _batch(egos, chunk, d: int, mask_centre: bool):
 
-    out = []
-    indices = sorted(indices, key=lambda i: len(egos[i].features))
-    for chunk in _chunks(egos, indices, size):
-        b = len(chunk)
-        k = np.fromiter((len(egos[i].features) for i in chunk), dtype="int64",
-                        count=b)
-        m = int(k.max())
+    b = len(chunk)
+    k = np.fromiter((egos[i].size for i in chunk), dtype="int64",
+                    count=b)
+    m = int(k.max())
 
-      
-        X = np.zeros((b, m, d), dtype="float32")
-        A = np.zeros((b, m, m), dtype="float32")
-       
-        has_deg = any(egos[i].degrees is not None for i in chunk)
-        D = np.zeros((b, m), dtype="float32") if has_deg else None
-        for j, i in enumerate(chunk):
-            e = egos[i]
-            kk = int(k[j])
-            X[j, :kk] = e.features
-            u, v = e.edges[:, 0], e.edges[:, 1]
-            A[j, u, v] = A[j, v, u] = 1.0
-            if has_deg:
-                D[j, :kk] = (e.degrees if e.degrees is not None else
-                             np.bincount(np.concatenate([u, v]),
-                                         minlength=kk) + 1.0)
+  
+    X = np.zeros((b, m, d), dtype="float32")
+    A = np.zeros((b, m, m), dtype="float32")
+   
+    has_deg = any(egos[i].degrees is not None for i in chunk)
+    D = np.zeros((b, m), dtype="float32") if has_deg else None
+    for j, i in enumerate(chunk):
+        e = egos[i]
+        kk = int(k[j])
+        X[j, :kk] = e.features
+        u, v = e.edges[:, 0], e.edges[:, 1]
+        A[j, u, v] = A[j, v, u] = 1.0
+        if has_deg:
+            D[j, :kk] = (e.degrees if e.degrees is not None else
+                         np.bincount(np.concatenate([u, v]),
+                                     minlength=kk) + 1.0)
 
-       
-        mask = (np.arange(m)[None, :] < k[:, None]).astype("float32")
-        centre = np.fromiter((egos[i].centre for i in chunk), dtype="int64", count=b)
-        target = X[np.arange(b), centre].copy()
-        if mask_centre:
-            X[np.arange(b), centre] = 0.0
+   
+    mask = (np.arange(m)[None, :] < k[:, None]).astype("float32")
+    centre = np.fromiter((egos[i].centre for i in chunk), dtype="int64", count=b)
+    target = X[np.arange(b), centre].copy()
+    if mask_centre:
+        X[np.arange(b), centre] = 0.0
 
-        tA = torch.from_numpy(A)
-        tmask = torch.from_numpy(mask)
-        tdeg = None if D is None else torch.from_numpy(D)
-        out.append((torch.from_numpy(X), _normalise(tA, tmask, tdeg),
-                    torch.from_numpy(centre), torch.from_numpy(target), chunk))
-    return out
+    tA = torch.from_numpy(A)
+    tmask = torch.from_numpy(mask)
+    tdeg = None if D is None else torch.from_numpy(D)
+    return (torch.from_numpy(X), _normalise(tA, tmask, tdeg),
+            torch.from_numpy(centre), torch.from_numpy(target), chunk)
+
+
+class BatchPlan:
+    def __init__(self, egos, indices, d: int, size: int, mask_centre: bool):
+        self.egos, self.d, self.mask_centre = egos, d, mask_centre
+        self.chunks = list(_chunks(
+            egos, sorted(indices, key=lambda i: egos[i].size), size))
+
+    def __len__(self) -> int:
+        return len(self.chunks)
+
+    def __getitem__(self, j):
+        return _batch(self.egos, self.chunks[j], self.d, self.mask_centre)
+
+    def __iter__(self):
+        return (self[j] for j in range(len(self.chunks)))
+
+
+def batches(egos, indices, d: int, size: int,
+            mask_centre: bool) -> BatchPlan:
+    return BatchPlan(egos, indices, d, size, mask_centre)
 
 
 def _score(model, egos, cfg) -> np.ndarray:
@@ -348,10 +364,10 @@ def train_dencad(split_dir: Path | str,
         candidates = graph._candidates(signed)
         n_candidates = candidates.count()
        
-        e_df = (graph._distances(candidates, signed)
-                .localCheckpoint(eager=True))
+        e_df = graph._distances(candidates, signed)
         n_edges = e_df.count()
         signed.unpersist()
+        candidates.unpersist()
         vertices = win["train"].select(F.col(ID).alias(C.NODE))
         cores_df = C.core_objects(e_df, cfg["min_pts"]).localCheckpoint(eager=True)
         logger.info("graph: {:,} edges of {:,} candidates, {:,} core objects",
@@ -378,18 +394,23 @@ def train_dencad(split_dir: Path | str,
                                  features).localCheckpoint(eager=True)
         pool = _pool_frame(win["train"], pool_nodes,
                            features).localCheckpoint(eager=True)
+        e_df.unpersist()
+        cores_df.unpersist()
         placed = _place(spark, win["train"], pool, features, exclude_self=True)
         queries = S.query_frame(placed, clustered, win["train"], features,
                                 leave_out=True)
         if take:
             queries = queries.sample(False, min(1.0, take / len(labels["train"])),
                                      seed=cfg["seed"])
+    
+        queries = queries.localCheckpoint(eager=True)
         shard_dir = Path(tempfile.mkdtemp(prefix="dencad_shards_"))
         vqueries = None
         if on_ap:
             vqueries = S.query_frame(
                 _place(spark, win["validation"], pool, features),
-                clustered, win["validation"], features, label=label)
+                clustered, win["validation"], features,
+                label=label).localCheckpoint(eager=True)
         S.write_shards(shard_dir, replicas, queries, members, features,
                        validation=vqueries,
                        meta={"dataset": dataset,

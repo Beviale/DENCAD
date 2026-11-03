@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from typing import Optional, Sequence
 
 from loguru import logger
@@ -16,6 +17,8 @@ DEFAULT_PERMUTATIONS = 30
 DEFAULT_BAND = 30
 DEFAULT_EPS = 1.0
 ID = "_id"
+
+PAIRS_PER_BLOCK = 50_000
 
 
 class NeighbourhoodGraph:
@@ -105,15 +108,31 @@ class NeighbourhoodGraph:
                                 for item in (F.lit(part), F.lit(off))])
         return ranked.withColumn("_pos", F.col("_local") + lookup[F.col("_part")])
 
+    @contextmanager
+    def _blocks(self, spark, pairs: int, what: str):
+        """Hold the shuffle at one block per PAIRS_PER_BLOCK pairs, then put it back."""
+
+        blocks = int(min(1024, max(self.workers, pairs // PAIRS_PER_BLOCK)))
+        held = spark.conf.get("spark.sql.shuffle.partitions")
+        spark.conf.set("spark.sql.shuffle.partitions", str(blocks))
+        logger.info("  {} {:,} pairs in {} blocks", what, pairs, blocks)
+        try:
+            yield
+        finally:
+            spark.conf.set("spark.sql.shuffle.partitions", held)
+
     def _candidates(self, signed):
         """Pairs that share a neighbourhood in at least one permuted ordering."""
 
         rng = np.random.default_rng(self.seed + 1)
         pairs = None
+        self.objects = signed.count()
+        keys = signed.select(ID, "_sig")
         for p in range(self.permutations):
             order = rng.permutation(self.bits)
             permuted = F.array(*[F.col("_sig")[int(i)] for i in order])
-            ranked = self._positions(signed.withColumn("_perm", permuted),
+            ranked = self._positions(keys.withColumn("_perm", permuted)
+                                         .select(ID, "_perm"),
                                      ["_perm", ID]).select(ID, "_pos")
             right = ranked.select(F.col(ID).alias("_dst"),
                                   F.col("_pos").alias("_pos2"))
@@ -125,30 +144,37 @@ class NeighbourhoodGraph:
             if (p + 1) % 10 == 0 or p + 1 == self.permutations:
                 logger.info("  {}/{} permutations proposed", p + 1, self.permutations)
 
-        out = (pairs.select(F.least("_src", "_dst").alias("_src"),
-                             F.greatest("_src", "_dst").alias("_dst"))
-                     .filter(F.col("_src") != F.col("_dst"))
-                     .distinct()
-                     .localCheckpoint(eager=True))
+        proposed = self.objects * self.permutations * self.band
+        with self._blocks(signed.sparkSession, proposed, "reducing"):
+            out = (pairs.select(F.least("_src", "_dst").alias("_src"),
+                                F.greatest("_src", "_dst").alias("_dst"))
+                        .filter(F.col("_src") != F.col("_dst"))
+                        .distinct()
+                        .localCheckpoint(eager=True))
         self._release()
         return out
 
     def _distances(self, candidates, signed):
         """The exact euclidean distance of every candidate pair, cut at eps."""
 
-        left = signed.select(F.col(ID).alias("_src"),
-                             F.col("_vec").alias("_va"), F.col("_norm").alias("_na"))
-        right = signed.select(F.col(ID).alias("_dst"),
-                              F.col("_vec").alias("_vb"), F.col("_norm").alias("_nb"))
+        pairs = candidates.count()
+        left = F.broadcast(signed.select(
+            F.col(ID).alias("_src"), F.col("_vec").alias("_va"),
+            F.col("_norm").alias("_na")))
+        right = F.broadcast(signed.select(
+            F.col(ID).alias("_dst"), F.col("_vec").alias("_vb"),
+            F.col("_norm").alias("_nb")))
         dot = F.aggregate(F.zip_with("_va", "_vb", lambda x, y: x * y),
                           F.lit(0.0), lambda acc, x: acc + x)
-        return (candidates.join(left, "_src").join(right, "_dst")
+        out = (candidates.join(left, "_src").join(right, "_dst")
                 .withColumn("distance",
                             F.sqrt(F.greatest(
                                 F.col("_na") * F.col("_na") + F.col("_nb") * F.col("_nb")
-                                - F.lit(2.0) * dot, F.lit(0.0))))
-                .filter(F.col("distance") <= F.lit(self.eps))
-                .select("_src", "_dst", "distance"))
+                                - F.lit(2.0) * dot, F.lit(0.0)))))
+        with self._blocks(candidates.sparkSession, pairs, "verifying"):
+            return (out.filter(F.col("distance") <= F.lit(self.eps))
+                    .select("_src", "_dst", "distance")
+                    .localCheckpoint(eager=True))
 
 
     # ------------------------------------------------------------------- build

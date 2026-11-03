@@ -3,13 +3,14 @@ data:
     swat: 60                         # 1 s per reading
     hai: 30                          # 1 s per reading
     esa: 132                         # 60 s per reading, so about 2 hours
+  
   eps: &eps
-    swat: [1.05, 1.20]
-    hai: [5.80, 6.10]
-    esa_rare_anomalies: [6.28, 6.53]
-    esa_anomalies: [5.11, 5.37]
-    esa_rare_anomalies_contaminated: [3.10, 3.26]
-    esa_anomalies_contaminated: [3.10, 3.26]
+    swat: [1.36, 1.52]
+    hai: [8.42, 9.12]
+    esa_rare_anomalies: [7.54, 7.89]
+    esa_anomalies: [6.06, 6.34]
+    esa_rare_anomalies_contaminated: [3.40, 3.61]
+    esa_anomalies_contaminated: [3.40, 3.61]
   scale_windows: true
   seed: 42
   workers: 4
@@ -72,7 +73,7 @@ dencad:
     max_members:                     # members per example
       swat: [500]
       hai: [500]
-      esa: [150]
+      esa: [500]
     hidden: [64, 128]
     latent: [16, 32]
     layers: [2, 3]

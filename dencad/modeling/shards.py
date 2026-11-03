@@ -193,7 +193,7 @@ def read_shard(out_dir: Path, rank: int, eps: float,
         val_y = (val.set_index("_row")["_y"].reindex(val_rows)
                  .to_numpy().astype("uint8"))
 
-    sizes = np.array([len(e.features) for e in egos]) if egos else np.zeros(1)
+    sizes = np.array([e.size for e in egos]) if egos else np.zeros(1)
     return {"egos": egos, "fit": order.tolist(), "val_egos": val_egos, "val_rows": val_rows, "val_y": val_y,
             "n_clusters": len(by_cluster), "member_rows": len(members),
             "nodes_median": int(np.median(sizes)), "nodes_max": int(sizes.max())}
