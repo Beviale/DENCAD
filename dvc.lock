@@ -283,8 +283,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -295,28 +295,28 @@ stages:
       size: 4400
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -446,8 +446,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -458,20 +458,20 @@ stages:
       size: 4400
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -597,28 +597,28 @@ stages:
       size: 3304
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_plain.py
       hash: md5
       md5: dda361d937f7de3e4ba6f2ea67a2069d
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -715,20 +715,20 @@ stages:
       size: 3304
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_plain.py
       hash: md5
       md5: dda361d937f7de3e4ba6f2ea67a2069d
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -829,8 +829,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -841,32 +841,32 @@ stages:
       size: 4400
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_sigma.py
       hash: md5
       md5: 7cc9ce0634cee62ff343b7addc5351c3
       size: 8651
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -969,8 +969,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -981,24 +981,24 @@ stages:
       size: 4400
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_sigma.py
       hash: md5
       md5: 7cc9ce0634cee62ff343b7addc5351c3
       size: 8651
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -1104,8 +1104,8 @@ stages:
       size: 12320
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -1193,8 +1193,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -1205,28 +1205,28 @@ stages:
       size: 4400
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -1356,8 +1356,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -1368,20 +1368,20 @@ stages:
       size: 4400
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -1507,28 +1507,28 @@ stages:
       size: 3304
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_plain.py
       hash: md5
       md5: dda361d937f7de3e4ba6f2ea67a2069d
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -1625,20 +1625,20 @@ stages:
       size: 3304
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_plain.py
       hash: md5
       md5: dda361d937f7de3e4ba6f2ea67a2069d
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -1739,8 +1739,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -1751,32 +1751,32 @@ stages:
       size: 4400
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_sigma.py
       hash: md5
       md5: 7cc9ce0634cee62ff343b7addc5351c3
       size: 8651
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -1879,8 +1879,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -1891,24 +1891,24 @@ stages:
       size: 4400
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_sigma.py
       hash: md5
       md5: 7cc9ce0634cee62ff343b7addc5351c3
       size: 8651
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -2014,8 +2014,8 @@ stages:
       size: 12320
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -2297,8 +2297,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -2309,28 +2309,28 @@ stages:
       size: 4400
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -2428,8 +2428,8 @@ stages:
     outs:
     - path: reports/search_dencad_esa_rare_anomalies.json
       hash: md5
-      md5: 387010cefb08a52b4ae2b527a06c0c3a
-      size: 12811
+      md5: 733e1132875cda8661f3c3d321eead71
+      size: 11780
   dencad_esa_rare_anomalies:
     cmd: python -m dencad.modeling.train_dencad --split_dir 
       data/processed/esa_rare_anomalies --stage final --selected 
@@ -2461,8 +2461,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -2473,28 +2473,28 @@ stages:
       size: 4400
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
       size: 4425
     - path: reports/search_dencad_esa_rare_anomalies.json
       hash: md5
-      md5: 387010cefb08a52b4ae2b527a06c0c3a
-      size: 12811
+      md5: 733e1132875cda8661f3c3d321eead71
+      size: 11780
     params:
       params.yaml:
         data:
@@ -2588,8 +2588,8 @@ stages:
     outs:
     - path: reports/dencad_esa_rare_anomalies_132steps_final.json
       hash: md5
-      md5: 7d0991d929a4a1573f4bcb8da8081889
-      size: 1882
+      md5: 1d4e6f2102bb51ba41cb1bb8854c6f27
+      size: 1898
   search_plain_esa_rare_anomalies:
     cmd: python -m dencad.modeling.search --split_dir 
       data/processed/esa_rare_anomalies --model plain --runs 16
@@ -2612,28 +2612,28 @@ stages:
       size: 3304
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_plain.py
       hash: md5
       md5: dda361d937f7de3e4ba6f2ea67a2069d
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -2731,20 +2731,20 @@ stages:
       size: 3304
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_plain.py
       hash: md5
       md5: dda361d937f7de3e4ba6f2ea67a2069d
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -2845,8 +2845,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -2857,32 +2857,32 @@ stages:
       size: 4400
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_sigma.py
       hash: md5
       md5: 7cc9ce0634cee62ff343b7addc5351c3
       size: 8651
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -2986,8 +2986,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -2998,24 +2998,24 @@ stages:
       size: 4400
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_sigma.py
       hash: md5
       md5: 7cc9ce0634cee62ff343b7addc5351c3
       size: 8651
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -3122,8 +3122,8 @@ stages:
       size: 12320
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -3212,8 +3212,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -3224,28 +3224,28 @@ stages:
       size: 4400
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -3377,8 +3377,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -3389,20 +3389,20 @@ stages:
       size: 4400
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -3529,28 +3529,28 @@ stages:
       size: 3304
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_plain.py
       hash: md5
       md5: dda361d937f7de3e4ba6f2ea67a2069d
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -3649,20 +3649,20 @@ stages:
       size: 3304
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_plain.py
       hash: md5
       md5: dda361d937f7de3e4ba6f2ea67a2069d
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -3764,8 +3764,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -3776,32 +3776,32 @@ stages:
       size: 4400
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_sigma.py
       hash: md5
       md5: 7cc9ce0634cee62ff343b7addc5351c3
       size: 8651
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -3906,8 +3906,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -3918,24 +3918,24 @@ stages:
       size: 4400
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_sigma.py
       hash: md5
       md5: 7cc9ce0634cee62ff343b7addc5351c3
       size: 8651
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -4043,8 +4043,8 @@ stages:
       size: 12320
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -4132,8 +4132,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -4144,28 +4144,28 @@ stages:
       size: 4400
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -4296,8 +4296,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -4308,20 +4308,20 @@ stages:
       size: 4400
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -4447,28 +4447,28 @@ stages:
       size: 3304
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_plain.py
       hash: md5
       md5: dda361d937f7de3e4ba6f2ea67a2069d
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -4566,20 +4566,20 @@ stages:
       size: 3304
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_plain.py
       hash: md5
       md5: dda361d937f7de3e4ba6f2ea67a2069d
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -4680,8 +4680,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -4692,32 +4692,32 @@ stages:
       size: 4400
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_sigma.py
       hash: md5
       md5: 7cc9ce0634cee62ff343b7addc5351c3
       size: 8651
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -4821,8 +4821,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -4833,24 +4833,24 @@ stages:
       size: 4400
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_sigma.py
       hash: md5
       md5: 7cc9ce0634cee62ff343b7addc5351c3
       size: 8651
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -4957,8 +4957,8 @@ stages:
       size: 12320
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -5046,8 +5046,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -5058,28 +5058,28 @@ stages:
       size: 4400
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -5210,8 +5210,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -5222,20 +5222,20 @@ stages:
       size: 4400
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -5361,28 +5361,28 @@ stages:
       size: 3304
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_plain.py
       hash: md5
       md5: dda361d937f7de3e4ba6f2ea67a2069d
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -5480,20 +5480,20 @@ stages:
       size: 3304
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_plain.py
       hash: md5
       md5: dda361d937f7de3e4ba6f2ea67a2069d
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -5594,8 +5594,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -5606,32 +5606,32 @@ stages:
       size: 4400
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_sigma.py
       hash: md5
       md5: 7cc9ce0634cee62ff343b7addc5351c3
       size: 8651
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -5735,8 +5735,8 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/parallel.py
       hash: md5
       md5: 057cefb1b7daa00da203cbc7f8d27e3f
@@ -5747,24 +5747,24 @@ stages:
       size: 4400
     - path: dencad/modeling/shards.py
       hash: md5
-      md5: c2e18755751b9238cc63ef8da5e9fb4e
-      size: 8966
+      md5: 95a46008f7eeb0d75acf7bcfa30910b6
+      size: 9072
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_sigma.py
       hash: md5
       md5: 7cc9ce0634cee62ff343b7addc5351c3
       size: 8651
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -5871,8 +5871,8 @@ stages:
       size: 12320
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -5960,24 +5960,24 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_ego.py
       hash: md5
       md5: ad86bd2362137294987b32c2bec6f5c4
@@ -5988,8 +5988,8 @@ stages:
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -6104,16 +6104,16 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_ego.py
       hash: md5
       md5: ad86bd2362137294987b32c2bec6f5c4
@@ -6124,8 +6124,8 @@ stages:
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -6240,24 +6240,24 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_ego.py
       hash: md5
       md5: ad86bd2362137294987b32c2bec6f5c4
@@ -6268,8 +6268,8 @@ stages:
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -6384,16 +6384,16 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_ego.py
       hash: md5
       md5: ad86bd2362137294987b32c2bec6f5c4
@@ -6404,8 +6404,8 @@ stages:
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -6520,24 +6520,24 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_ego.py
       hash: md5
       md5: ad86bd2362137294987b32c2bec6f5c4
@@ -6548,8 +6548,8 @@ stages:
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -6665,16 +6665,16 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_ego.py
       hash: md5
       md5: ad86bd2362137294987b32c2bec6f5c4
@@ -6685,8 +6685,8 @@ stages:
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -6802,24 +6802,24 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_ego.py
       hash: md5
       md5: ad86bd2362137294987b32c2bec6f5c4
@@ -6830,8 +6830,8 @@ stages:
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -6948,16 +6948,16 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_ego.py
       hash: md5
       md5: ad86bd2362137294987b32c2bec6f5c4
@@ -6968,8 +6968,8 @@ stages:
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -7084,24 +7084,24 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_ego.py
       hash: md5
       md5: ad86bd2362137294987b32c2bec6f5c4
@@ -7112,8 +7112,8 @@ stages:
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -7229,16 +7229,16 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_ego.py
       hash: md5
       md5: ad86bd2362137294987b32c2bec6f5c4
@@ -7249,8 +7249,8 @@ stages:
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -7365,24 +7365,24 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/run_one.py
       hash: md5
-      md5: 15a0b310237ed12c7e3e7ad5207b9791
-      size: 1351
+      md5: d04dd1f6d2d7523a732bbec46e59554c
+      size: 882
     - path: dencad/modeling/search.py
       hash: md5
-      md5: c110da4088aec12fe79cf5079f7eea43
-      size: 6736
+      md5: b59a80a6bd794d02ede83f8137729eaa
+      size: 6503
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_ego.py
       hash: md5
       md5: ad86bd2362137294987b32c2bec6f5c4
@@ -7393,8 +7393,8 @@ stages:
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8
@@ -7510,16 +7510,16 @@ stages:
       size: 3304
     - path: dencad/modeling/lsh.py
       hash: md5
-      md5: 29a78a2f919e211bf03963470aefb239
-      size: 9141
+      md5: c87cabf09fe70cb42885ef26cb8a3878
+      size: 7670
     - path: dencad/modeling/subgraphs.py
       hash: md5
-      md5: d348aa098e98df4f56cfa4b608496d85
-      size: 8772
+      md5: fb9bbe0aa3d34f2785e2d1cc0844ee1c
+      size: 8425
     - path: dencad/modeling/train_dencad.py
       hash: md5
-      md5: 08efdc7ef551a1f32d22266d7aa621d1
-      size: 23737
+      md5: 14dd62dd1828c0df4f572f05b82b7541
+      size: 22611
     - path: dencad/modeling/train_ego.py
       hash: md5
       md5: ad86bd2362137294987b32c2bec6f5c4
@@ -7530,8 +7530,8 @@ stages:
       size: 10376
     - path: dencad/modeling/windowing.py
       hash: md5
-      md5: 6795f71a5ae6c136927f8541474767da
-      size: 17520
+      md5: 7d5be20bff0c7918af7d12003f0cc33a
+      size: 16807
     - path: dencad/utils.py
       hash: md5
       md5: e3d8af5fd7bc07a253f156cddf3c12f8

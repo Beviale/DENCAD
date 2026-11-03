@@ -11,9 +11,10 @@ import numpy as np
 
 def assign_by_count(counts: dict[int, int], world_size: int) -> dict[int, int]:
     """Clusters to replicas, the largest first and always to the lightest replica."""
+    
     tally = {k: 0 for k in range(world_size)}
     where: dict[int, int] = {}
-    for c in sorted(counts, key=lambda x: -counts[x]):
+    for c in sorted(counts, key=lambda x: (-counts[x], x)):
         k = min(tally, key=lambda j: tally[j])
         where[int(c)] = k
         tally[k] += counts[c]
@@ -169,6 +170,8 @@ def read_shard(out_dir: Path, rank: int, eps: float,
     members, queries = part("members"), part("queries")
     if members is None or queries is None:
         raise RuntimeError(f"replica {rank} has no shard under {out_dir}")
+
+    queries = queries.sort_values("_row", kind="stable")
     by_cluster = {int(c): g for c, g in members.groupby("_cluster")}
 
     def build(frame):
@@ -189,7 +192,7 @@ def read_shard(out_dir: Path, rank: int, eps: float,
     val_rows, val_egos = np.zeros(0, dtype="int64"), []
     val_y = np.zeros(0, dtype="uint8")
     if val is not None and len(val):
-        val_rows, val_egos = build(val)
+        val_rows, val_egos = build(val.sort_values("_row", kind="stable"))
         val_y = (val.set_index("_row")["_y"].reindex(val_rows)
                  .to_numpy().astype("uint8"))
 
