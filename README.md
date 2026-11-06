@@ -150,7 +150,7 @@ $$h_i(x) = \left\lfloor \frac{a_i \cdot x + c_i}{w} \right\rfloor, \qquad a_i \s
 so the signature of $x$ is $(h_1(x), \dots, h_b(x))$. This is the $p$-stable construction
 with $p = 2$: the projections of two windows differ by a Gaussian whose deviation is their
 euclidean distance, so the chance of sharing a bucket falls with that distance. The bucket
-width is $w = \texttt{width\_factor} \cdot \varepsilon$, tied to the radius of interest.
+width is $w$ = `width_factor` · $\varepsilon$, tied to the radius of interest.
 
 Candidates are generated without exact bucket equality, by the permuted
 sorted-neighbourhood scheme of Ravichandran et al. [5] that DENCAST itself uses: the order
