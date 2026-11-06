@@ -1,388 +1,405 @@
-# DENCAST
-
-PySpark implementation of
-
-> Corizzo R., Pio G., Ceci M., Malerba D.
-> **DENCAST: distributed density-based clustering for multi-target regression**
-> *Journal of Big Data* 6:43 (2019) — [10.1186/s40537-019-0207-2](https://doi.org/10.1186/s40537-019-0207-2)
-
-Only DENCAST is implemented: no K-means, ARIMA or LSTM baselines. Where the
-paper and the original Scala code disagree, the paper wins — the divergences
-are listed under [Differences from the Scala code](#differences-from-the-scala-code).
-
-Project layout follows **Cookiecutter Data Science**, the pipeline is
-orchestrated with **DVC**, and every run is tracked with **MLflow** on
-**DagsHub**.
-
----
-
-## The algorithm
-
-DENCAST is DBSCAN's notion of a cluster computed with different machinery, plus
-a prediction step DBSCAN does not have.
-
-```
-labeled objects
-      │
-      │  1. LSH            random hyperplanes → r-bit signatures → permuted
-      ▼                    sorted lists → candidate pairs → exact cosine filter
-neighborhood graph ⟨V,E⟩
-      │
-      │  2. core objects   degree ≥ minPts
-      ▼
-      │  3. propagation    core objects send their cluster id along the edges;
-      ▼                    every node keeps the maximum received; stop when
-clusters                   propagations < labelChangeRate · |E|
-      │
-      │  4. prediction     an unlabeled object inherits the cluster of the most
-      ▼                    similar labeled object; its targets are the
-predictions                similarity-weighted average of that cluster's targets
-```
-
-Two properties worth keeping in mind:
-
-* **Steps 2–3 only ever see object ids and edges**, never feature vectors.
-  Propagating one integer per edge instead of a 214-dimensional vector is two
-  orders of magnitude less network traffic per iteration; the features are
-  joined back only for prediction.
-* **There is no merging phase on a single machine.** Other distributed
-  density-based methods cluster each partition locally and reconcile on the
-  driver; here the clusters emerge from the propagation itself.
-
-DENCAST is *inductive*: the model is built once and new objects are routed
-through it. "Unlabeled" means hidden from the algorithm, not unknown to us —
-targets are withheld on purpose so predictions can be scored.
-
----
-
-## Quickstart
-
-Dependencies are declared in `pyproject.toml` and installed into a virtual
-environment; there is no `requirements.txt`.
-
-```bash
-uv sync --extra dev       # create .venv from pyproject.toml + uv.lock
-
-cp .env.example .env      # DagsHub credentials (optional)
-
-uv run dvc repro          # run the whole DAG
-uv run dvc dag            # show the graph
-uv run dvc metrics show   # see the results
-uv run pytest             # tests
-```
-
-Extras: `--extra dev` adds ruff and pytest, `--extra notebooks` adds
-JupyterLab, matplotlib and pandas.
-
-Every stage in `dvc.yaml` is invoked through `uv run`, so the pipeline resolves
-its own environment. A bare `python -m ...` would be resolved through `PATH`
-instead, and since `dvc repro` runs each stage in a subprocess that inherits
-the caller's `PATH`, the stages could silently execute under a different
-interpreter than the one `dvc` itself is running from.
-
-Requires Java 8/11/17 on the PATH (PySpark 3.5 does not support Java 21).
-Without a `.env`, MLflow logs locally to `./mlruns` and everything still works
-offline.
-
----
-
-## Pipeline
-
-```
-extract ──► features ──┬──► train
-                       └──► evaluate
-```
-
-| stage | command | what it does |
-|---|---|---|
-| `extract` | `python -m dencast.data.extract_data` | reads the `COPY` block of the pg_dump into `data/raw/` |
-| `features` | `python -m dencast.features` | assembles the feature/target arrays, normalizes, writes Parquet |
-| `train` | `python -m dencast.modeling.train` | fits one reference window, saves the model and cluster diagnostics |
-| `evaluate` | `python -m dencast.modeling.predict` | rolls over the test split, aggregates the errors |
-
-Each stage declares only the `params.yaml` blocks it uses, so editing a
-clustering parameter re-runs `train` and `evaluate` but not the extraction of a
-300 MB dump.
-
-`train` exists because DENCAST is refit on a fresh window for every test day:
-there is no single model artifact in the usual sense, so this stage fits the
-first window of the split to give something inspectable. The real experiment is
-`evaluate`.
-
-### Experiments
-
-```bash
-dvc exp run -S clustering.min_pts=5 -S lsh.min_sim=0.97
-dvc exp run -S lsh.r=11
-dvc exp show
-dvc metrics diff
-```
-
----
-
-## Configuration
-
-Everything lives in `params.yaml`.
-
-| parameter | paper | meaning |
-|---|---|---|
-| `lsh.r` | r | random hyperplanes = signature length in bits |
-| `lsh.num_permutations` | numPerm | how many sorted lists to build |
-| `lsh.b` | B | positional neighbours per object per list |
-| `lsh.min_sim` | minSim | cosine threshold for an edge to exist |
-| `clustering.min_pts` | minPts | minimum degree for a core object |
-| `clustering.label_change_rate` | LCR | stop when propagations < LCR · \|E\| |
-| `evaluation.window_size` | — | days of training before each test day |
-
-### Tuning: look at the cluster count, not the RMSE
-
-The cluster count is a far better guide than the error. It is structural, it
-barely depends on which test day was picked, and Table 4 of the paper gives a
-target: **618 clusters** for PV Italy ST at 30 days.
-
-Measured on `2012-06-13`, 10 013 training objects, with the paper's `r=5`:
-
-| minPts | minSim | edges | core | noise | **clusters** | RMSE | RMSE macro |
-|---|---|---|---|---|---|---|---|
-| 3 | 0.80 | 54 290 | 9907 | 22 | 242 | 0.1314 | 0.1285 |
-| 3 | 0.90 | 36 666 | 8836 | 618 | 392 | 0.1250 | 0.1223 |
-| 3 | 0.95 | 22 092 | 6897 | 2013 | **720** | 0.1448 | 0.1390 |
-| 3 | 0.97 | 14 890 | 4981 | 3494 | **733** | 0.1262 | 0.1180 |
-| 3 | 0.98 | 10 175 | 3292 | 5274 | **698** | 0.1143 | **0.1067** |
-| 3 | 0.99 | 4 605 | 1160 | 7960 | 438 | 0.1810 | 0.1772 |
-| 5 | 0.98 | 16 313 | 2805 | 5489 | 411 | 0.2007 | 0.1945 |
-| 10 | 0.95 | 67 423 | 6271 | 2196 | 158 | 0.1520 | 0.1456 |
-
-Full grid in [`reports/grid_pvitaly_st_30d.tsv`](reports/grid_pvitaly_st_30d.tsv).
-
-Three things follow:
-
-**`minPts` is the decisive knob.** At `minPts=5` the cluster count never leaves
-the 150–420 band; at `minPts=3` it reaches 700+, and the paper's 618 sits
-between `minSim=0.98` (698) and `0.99` (438). The paper never reports which
-point of its grid won, so this is the only way to locate it.
-
-**The cluster count is unimodal in `minSim`.** 242 → 392 → 720 → 733 → 698 →
-438. At low thresholds merging dominates (connected components swallow
-everything); at high thresholds noise dominates (too few core objects survive).
-The peak is in between.
-
-**`r=5` is a poor choice, and the paper's own Table 1 says so.** With 5 bits
-there are 32 distinct signatures, so on a 10 000-object window ~313 objects
-share each one; adjacency in the sorted list then means nothing and LSH recall
-collapses to ~10 candidates per object. Raising `r` on the same day, with
-everything else fixed:
-
-| r | candidates/obj | core | noise | clusters | RMSE |
-|---|---|---|---|---|---|
-| 5 | 10.4 | 765 | 8307 | 241 | 0.1801 |
-| 11 | 12.9 | 1579 | 7217 | 369 | 0.1322 |
-| 15 | 19.3 | 2739 | 5519 | 297 | **0.1080** |
-| 20 | 30.7 | 5530 | 2468 | 250 | 0.1131 |
-
-Table 1 of the paper reports a 37% lower RMSE at `r=11` than at `r=5` for 27%
-more runtime, and then sets `r=5` anyway.
-
-### Choosing `min_sim` on a new dataset
-
-Measure the distribution of pairwise cosine similarities first — it takes five
-minutes and tells you whether there is any signal to threshold on. On the
-synthetic set shipped here, `min_sim=0.90` lets 89% of all pairs through, the
-graph comes out nearly complete, and predictions collapse to the global mean.
-
----
-
-## Evaluation protocol
-
-The paper's protocol, reproduced here:
-
-```
-854 days in PV Italy  →  10% = 85 days per split
-5 splits × 85 days × 17 plants  =  7 225 per-(plant, day) RMSEs, then averaged
-```
-
-`references/pv_italy_*.txt` are the paper's own splits. Note they are **not
-disjoint**: any two share about ten days, and across the ten files 850 day-slots
-cover only 542 distinct days — 36% is literal duplication, since the same day
-with the same 30-day window produces the same prediction.
-
-### Two RMSEs, on purpose
-
-```
-rmse         pooled: all predictions together, one square root
-rmse_macro   one RMSE per (plant, day), then a plain average   ← the paper's
-```
-
-The Scala code aggregates the second way:
-
-```scala
-predictionsByDay.groupByKey().map { calculateErrors(...) }
-totalRMSE = dailyErrors.map(_._4).reduce(_+_) / dailyErrors.count()
-```
-
-Because the square root is concave, the macro-average is at most the pooled
-figure, with equality only when every group errs equally. On plants that range
-from RMSE 0.076 to 0.152 the gap is real, so the two are not interchangeable
-and comparisons with the published numbers must use `rmse_macro`.
-
-### Report the spread
-
-LSH is randomized: different seeds give different graphs, different clusters and
-different numbers. Measured on the synthetic dataset with the split held fixed:
-
-| seed | RMSE | clusters | noise |
-|---|---|---|---|
-| 0 | 0.0996 | 15 | 20 |
-| 1 | 0.0917 | 29 | 12 |
-| 2 | 0.0980 | 36 | 13 |
-| 3 | 0.0986 | 33 | 18 |
-| | **0.0970 ± 0.0036** | | |
-
-The predictions move ~4%, already the size of the gaps the paper reports
-between competing methods. **The structure underneath moves far more**: the
-cluster count goes from 15 to 36 between runs differing only in the random
-hyperplanes. Averaging over a cluster smooths that out, so RMSE badly
-understates how unstable the clustering is. Anything built on the cluster
-structure — sizes, membership, the noise flag — inherits that instability
-without RMSE ever warning you.
-
-Set `evaluation.seeds: [0, 1, 2, 3, 4]` in `params.yaml`; the evaluate stage
-reports mean and standard deviation.
-
----
-
-## MLflow on DagsHub
-
-DagsHub gives every repository an MLflow-compatible tracking server, so nothing
-in the code is DagsHub-specific: it is a tracking URI plus basic auth.
-
-```bash
-cp .env.example .env
-# MLFLOW_TRACKING_URI=https://dagshub.com/<owner>/<repo>.mlflow
-# MLFLOW_TRACKING_USERNAME=<owner>
-# MLFLOW_TRACKING_PASSWORD=<token from dagshub.com/user/settings/tokens>
-```
-
-Logged per run: every `params.yaml` value; the structural metrics (clusters,
-core objects, noise fraction, iterations, edges); per-day RMSE as a step series,
-so the run page shows the spread across days rather than just the average; and
-`reports/metrics.json` plus `reports/per_day_metrics.csv` as artifacts.
-
-### DVC remote on DagsHub
-
-DagsHub also serves DVC storage over the S3 protocol:
-
-```bash
-uv run python scripts/setup_dagshub_remote.py   # reads .env
-uv run dvc push
-```
-
-The endpoint goes to `.dvc/config`; the token goes to `.dvc/config.local`,
-which is gitignored.
-
----
-
-## Layout
-
-```
-├── data
-│   ├── external        the pg_dump files shipped with the paper
-│   ├── raw             tables extracted from the dumps
-│   ├── interim
-│   └── processed       feature/target arrays, Parquet
-├── dencast
-│   ├── config.py       paths + typed params.yaml
-│   ├── data/           stage: extract
-│   ├── features.py     stage: features, plus the temporal split
-│   ├── lsh.py          step 1: signatures, permutations, sorted lists, edges
-│   ├── clustering.py   steps 2–3: core objects, propagation
-│   ├── metrics.py      RMSE/MAE, pooled and macro
-│   ├── spark_session.py
-│   ├── tracking.py     MLflow/DagsHub
-│   └── modeling
-│       ├── train.py    stage: train
-│       └── predict.py  step 4 + stage: evaluate
-├── models              fitted model, graph, cluster sizes
-├── references          the paper's official splits, original config.properties
-├── reports             metrics, per-day results, tuning grid
-├── scripts             one-off helpers (synthetic data, bike sharing prep)
-├── scripts             one-off helpers (DagsHub remote, synthetic data)
-├── tests               run with `uv run pytest`
-├── dvc.yaml            the pipeline
-├── params.yaml         every knob
-├── pyproject.toml      dependencies, entry points, ruff/pytest config
-└── uv.lock             the resolved environment -- commit it
-```
-
----
-
-## Differences from the Scala code
-
-**Prediction.** Algorithm 4 compares the test object against *every labeled
-object*, inherits the cluster of the most similar one, and averages that
-cluster's targets weighted by similarity. The Scala code compares against the
-*centroids* of the clusters and returns the centroid's target, which makes its
-prediction step equivalent to K-means. This port follows the paper.
-
-**Cosine similarity.** `Cosine.apply` in the Scala computes
-`dotProduct(v2, v2) / (l2(v1) * l2(v2))` — the ratio of the norms, with the
-angle between the vectors never entering the calculation. This port computes
-the actual cosine.
-
-**Similarity weighting.** The per-object weighting in the Scala prediction
-reduces to `(pred * sim) / sim`, a single term, so the weights cancel. Here the
-weighted average runs over all members of the cluster, as in Eq. 2.
-
-**Edge weights.** The Scala graph is `RDD[(Node, Node)]`: the cosine decides
-whether an edge exists and is then discarded. This port keeps the similarity on
-the edge — four bytes per edge, and the propagation ignores it, but anything
-richer (weighted density, attachment strength) needs it.
-
-**Sliding window.** `SlidingRDD(signatures, b, b)` uses windowSize = step = b,
-i.e. non-overlapping blocks: an object sees only its block-mates and never its
-neighbour across a boundary. This port pairs `i` with `i+1..i+b`, which gives
-overlapping coverage and better recall.
-
----
-
-## Implementation notes
-
-**No GraphX.** It is not exposed in PySpark and GraphFrames does not cover
-`aggregateMessages`, so the message passing is written with DataFrame joins and
-aggregations. The structure is the same: a map over the edges, a reduce over the
-destinations.
-
-**No Python UDFs.** Signatures, cosine, propagation and the weighted average are
-all Spark SQL and run inside the JVM. That avoids serializing every row to a
-Python interpreter, and as a side effect the code also runs where PySpark's
-Python workers are broken.
-
-**The weighted average is two running sums**, `sum(sim·target)` as a vector and
-`sum(sim)` as a scalar, divided once at the end. Both are associative and
-commutative, so partitions accumulate independently and merge in any order —
-cluster members never have to be gathered in one place. This is what the paper
-means by the `+` operator between vectors being computed distributedly.
-
-**One spot does not scale.** `_candidate_pairs_for_permutation` numbers the
-sorted signatures with `row_number()` over an unpartitioned window, which moves
-all rows to one partition. On a cluster the sorted RDD would be numbered with
-`zipWithIndex`; that needs Python workers, hence the SQL form.
-
-**Lineage truncation.** The propagation loop rebuilds its plan on top of the
-previous iteration, so `state` is checkpointed each round; without it Spark
-re-derives the whole history at every action and overflows the stack.
-
----
-
-## Reproducibility gaps in the paper
-
-Worth knowing before trying to match the published numbers:
-
-* the winning `(minPts, minSim)` is never reported — the grid is given, the
-  chosen point is not, for any of the 42 dataset × setting × window cells;
-* which dataset the LSH tuning of Table 1 was run on is not stated;
-* the "independent split" used for tuning is not identified, and since the
-  splits overlap it is not independent in the strict sense;
-* no variance is reported anywhere, while LSH randomness alone moves the
-  results by about as much as the gaps between the compared methods;
-* the text says five splits, the repository ships ten date files per dataset.
+# Density-Based Clustering and Contextual Graph Autoencoders for Anomaly Detection in Industrial and Satellite Telemetry
+
+Alessandro Bevilacqua — Department of Computer Science, University of Bari Aldo Moro,
+Bari, Italy — <a.bevilacqua11@studenti.uniba.it>
+
+## Abstract
+
+Multivariate telemetry from industrial plants and spacecraft comprises large, complex
+datasets, where anomaly detection represents one of the most critical and highly requested
+tasks. This work reimplements DENCAST, a distributed density-based clustering algorithm
+built on locality-sensitive hashing, in PySpark, and extends it into an anomaly detector,
+**DENCAD**, in which a graph autoencoder reconstructs the centre of the contextual subgraph
+a new instance is attached to. DENCAD is compared with four other detectors on the same
+data and under the same protocol:
+
+- the **plain autoencoder**, the same network on one observation in isolation (graph-free);
+- the **graph autoencoder**, the same network over the $L$-hop neighbourhood the graph
+  defines, without any clustering;
+- **DENCAST distance**, the distance to the nearest clustered object;
+- **K-Means**, the distance to the nearest centroid.
+
+All five produce a score and share one thresholding rule, a multiple of the training
+deviation whose factor is chosen on validation (sigma rule); the comparison itself rests on
+average precision and ROC-AUC, which are threshold-free, so they reflect the ranking each
+detector produces rather than where its threshold happens to fall. From the results, it is
+quite clear that the autoencoder detectors are generally ahead of the distance-based ones,
+K-Means and DENCAST distance, even if not so much. Among the autoencoders no clear winner
+emerges, and the neighbourhood graph does not always justify its overhead. However, it is
+worth noting that DENCAD comes first on both ESA variants (normal and contaminated) that
+count rare events as legitimate when considering AP as the metric.
+
+## Introduction
+
+Industrial control systems and spacecraft emit continuous multivariate telemetry whose
+faults are rare but costly. Detection is posed as a one-class problem: a model of normal
+behaviour is fitted on a period believed to be clean and later instances are scored by how
+far they fall from it. Three properties make the setting challenging: the data is large —
+the ESA mission used here holds seven million readings over fourteen years — so the
+neighbourhood graph can be very expensive to compute; the detector must be *inductive*,
+scoring an instance that arrives after training without refitting anything; and an anomaly
+is not always a property of one reading but often a trend across many.
+
+DENCAST [1] addresses the first two challenges for clustering. It approximates a
+neighbourhood graph with locality-sensitive hashing, identifies core objects by their degree
+in the DBSCAN sense [2] and propagates cluster labels over the graph, all in Spark.
+Furthermore, a new object is assigned to an existing cluster by similarity to a clustered
+one rather than by refitting.
+
+The third challenge is addressed in the preprocessing stage of this work. Readings are
+grouped into fixed, non-overlapping windows of a set length, and each window is reduced to
+summary statistics per feature: mean, standard deviation, minimum and maximum for the
+numeric channels, and mode, entropy, distinct count and largest share for the categorical
+ones. The window is then the object that is hashed, clustered and scored, and it is labeled
+as positive if any of its constituent readings is positive (i.e. anomalous).
+
+DENCAD constructs the contextual subgraph for a new window by retrieving its nearest
+clustered windows, and employs a graph autoencoder to reconstruct the target window from
+this context, using the reconstruction error as the anomaly score.
+
+Our main contributions are a PySpark reimplementation of DENCAST starting from the original
+implementation written in Scala; DENCAD, an inductive detector over contextual subgraphs
+using density-based clustering; and an evaluation protocol applying the same thresholding
+rule and calibration procedure to five detectors.
+
+## Related work
+
+**Distributed density-based clustering.** DBSCAN [2] defines clusters by density, but its
+neighbourhood queries parallelise poorly. DENCAST [1] replaces exact neighbourhoods with LSH
+candidates and label propagation in order to adopt a design that fits Spark's shuffle model.
+We keep its graph construction and clustering. Its hash family, random hyperplanes [3], is
+canonical for angular similarity and invariant to the norm of the vector; since our features
+are individually standardised, that norm represents the aggregate deviation from normal
+operation — precisely the signal we want to preserve. We therefore adopt the $p$-stable
+family of Datar et al. [4] (the family of E2LSH), whose collision probability decreases with
+Euclidean distance.
+
+**Graph autoencoders for anomaly detection.** DOMINANT [6] reconstructs both attributes and
+structure of an attributed graph with a graph convolutional encoder [7] and ranks nodes by
+reconstruction error. It is transductive: a new node requires recomputing the graph.
+Inductive aggregation [8] removes that constraint in principle; we obtain it by
+construction, attaching the new window to a frozen graph and reading only its own receptive
+field. Containing the cost of a full-graph convolution by partitioning is the argument of
+Cluster-GCN [9]; our contextual subgraphs exploit the same economy, with partitions derived
+from the density clustering rather than from a graph partitioner.
+
+## Materials
+
+Three public datasets are used, summarised below, where the ESA positive label can combine
+anomalies and rare events (i.e., rare events can be considered either legitimate or
+anomalous). SWaT is a water treatment testbed with labelled attack campaigns [10]; HAI 23.05
+is a hardware-in-the-loop industrial security dataset [11]; ESA is Mission 1 of the ESA
+Anomaly Dataset [12], comprising fourteen years of satellite telemetry whose 200 annotations
+distinguish 118 anomalies, 78 *rare events* (namely, unusual but legitimate behaviour), and
+4 communication gaps. Splits are chronological, so validation and test follow the training
+period with no overlapping windows.
+
+Datasets after preprocessing and the windows they produce. *Period* is the sampling interval
+and *steps* the readings a complete window holds; $d$ is the number of window features.
+Positives and segments are counted on the test split, a segment being a run of consecutive
+positive windows.
+
+| | rows | sensors | period | steps | $d$ | train | valid. | test | pos./seg. |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| SWaT | 946,719 | 52 | 1 s | 60 | 124 | 8,280 | 3,749 | 3,750 | 728 / 13 |
+| HAI | 802,800 | 87 | 1 s | 30 | 220 | 19,080 | 3,840 | 3,840 | 169 / 19 |
+| ESA | 7,364,160 | 76 | 60 s | 132 | 216 | 34,576 | 8,509 | 8,629 | 937 / 24 |
+
+**Cleaning.** Rows with no reading in any feature column are dropped, as are rows identical
+to an earlier one including the timestamp; both counts are zero on all three datasets.
+Columns missing at least 30% of the training rows are also discarded, which removes seven
+channels on SWaT that are entirely absent during training, together with columns constant on
+the training split and one of every pair whose absolute Pearson correlation exceeds $0.99$,
+or Cramér's $V$ for categorical pairs. Remaining gaps are imputed with the training median,
+or the mode for categorical columns.
+
+**Windowing.** Readings are aggregated into non-overlapping windows of a fixed number of
+readings, which serve as the unit that is scored and labelled: a window is positive if any
+of its readings are. Numeric features contribute their mean, standard deviation, minimum,
+and maximum, while categorical features contribute their mode, entropy, distinct count, and
+largest share. Windows holding fewer than half the expected readings are dropped, which on
+ESA removes 85 of the 34,661 training windows and one window in each of the validation and
+test splits. Additionally, window features are individually standardised.
+
+**One-class training and the two ESA labels.** The training split is rendered one-class by
+removing its positive instances, ensuring that the metrics upon which detectors calibrate
+are not inflated by anomalies. (Since the SWaT and HAI training splits are already
+anomaly-free, no removal was required.) For ESA, a second variant retains these positive
+instances to establish a contaminated setting, where the detector is trained on data
+containing anomalies, allowing us to evaluate the masking effect caused by inflated baseline
+deviations. Furthermore, ESA annotations admit two interpretations of the positive class —
+wherein rare events are either treated as anomalies or grouped with nominal behaviour.
+Crossing these two labelling strategies with the two training configurations yields four
+distinct variants for ESA. Under the combined label, the validation split contains 882
+positive windows across 27 segments and the test split contains 937 across 24; under the
+anomaly-only label, the validation split contains 294 positive windows across 17 segments
+and the test split contains 136 across 15.
+
+## Methods
+
+### Neighbourhood graph
+
+Each window is a vector $x \in \mathbb{R}^{d}$ holding its $d$ features, and it receives a
+signature of $b$ integers, one for each of $b$ random directions. The $i$-th direction is a
+vector $a_i \in \mathbb{R}^{d}$ of independent standard normal entries; projecting $x$ on it
+gives the scalar $a_i \cdot x$; that line is cut into buckets of width $w$, shifted by a
+random offset $c_i$; and the integer $h_i(x)$ says which bucket $x$ falls into,
+
+$$h_i(x) = \left\lfloor \frac{a_i \cdot x + c_i}{w} \right\rfloor, \qquad a_i \sim \mathcal{N}(0, I), \quad c_i \sim \mathcal{U}[0, w),$$
+
+so the signature of $x$ is $(h_1(x), \dots, h_b(x))$. This is the $p$-stable construction
+with $p = 2$: the projections of two windows differ by a Gaussian whose deviation is their
+euclidean distance, so the chance of sharing a bucket falls with that distance. The bucket
+width is $w = \texttt{width\_factor} \cdot \varepsilon$, tied to the radius of interest.
+
+Candidates are generated without exact bucket equality, by the permuted
+sorted-neighbourhood scheme of Ravichandran et al. [5] that DENCAST itself uses: the order
+of the $b$ values is permuted, all windows are sorted lexicographically by the permuted
+signature, and each is paired with the `band` windows that follow it over several
+permutations. Every candidate pair is then verified exactly and an edge is kept when
+$\lVert x_u - x_v \rVert \le \varepsilon$. The hash therefore decides only which pairs are
+compared, never which are connected, and the only possible error is a near pair that no
+permutation proposed.
+
+### Clustering
+
+A node is a *core* object when its degree reaches `min_pts`. Clusters are the connected
+groups of cores, grown by max-identifier label propagation: a non-core node that reaches a
+core joins the cluster as a *border* node, and a node that reaches no core remains noise.
+The propagation stops when the changes fall below `label_change_rate` times the number of
+directed edges, each undirected edge counting twice.
+
+**Calibrating the radius.** Unlike a cosine threshold, $\varepsilon$ has no universal range,
+so it is set from the data, and testing quantiles of the pairwise distance distribution is
+one way to do it.
+
+### Contextual subgraphs and DENCAD
+
+To find the contextual graph of a window to be scored (query), it is necessary to locate its
+closest node among the clustered ones (i.e., excluding noise points) and retrieve the
+corresponding cluster. This search can be done by an exact blocked argmin using Spark:
+queries and pool are split into blocks, each pair of blocks is reduced in a `pandas` task,
+and the per-query minima are combined.
+
+**Step 1: the problem.** A query is a vector $x_q \in \mathbb{R}^{d}$ and the pool is a set
+$P$ of $n_p$ clustered objects, each with its own vector. The placement looks for
+
+$$\pi(q) \;=\; \arg\min_{p \in P} \lVert x_q - x_p \rVert .$$
+
+**Step 2: the naive computation.** Build the full matrix
+$D \in \mathbb{R}^{n_q \times n_p}$ with $D_{qp} = \lVert x_q - x_p \rVert$ and take the
+minimum of each row.
+
+**Step 3: split the pool.** Partition $P$ into $s$ disjoint blocks,
+$P = P_1 \sqcup P_2 \sqcup \dots \sqcup P_s$, and compute for each block the partial minimum
+of a query,
+
+$$m_j(q) \;=\; \min_{p \in P_j} \lVert x_q - x_p \rVert .$$
+
+**Step 4: minimum combination.** The minimum over a disjoint union is the minimum of the
+partial minima,
+
+$$\min_{p \in P} \lVert x_q - x_p \rVert \;=\; \min_{j = 1, \dots, s} m_j(q) .$$
+
+**Step 5: split the queries as well.** With $Q = Q_1 \sqcup \dots \sqcup Q_r$ there are
+$r \times s$ block pairs $(Q_i, P_j)$, and each is independent of the others.
+
+**Step 6: map and reduce.** Each of the $r \cdot s$ pairs is computed on its own and emits
+$m_j(q)$ for every $q \in Q_i$; the results are grouped by $q$ and reduced by taking the
+minimum of its $s$ values.
+
+Its contextual subgraph is induced from the cluster of the identified nearest node.
+Specifically, the query is attached to both the nearest object and any cluster members
+within distance $\varepsilon$. The subgraph is then formed by extending this attachment set
+along the cluster's existing edges up to an $(L-1)$-hop neighbourhood, which gives $L$ graph
+convolutions their complete receptive field. The final graph comprises these nodes, the
+cluster's edges among them, the query's attachment edges, and the query itself designated as
+the central target node.
+
+The encoder is a graph convolution with the symmetric normalisation of [7],
+
+$$H^{(l+1)} = \sigma\!\left( \hat{A} H^{(l)} W^{(l)} \right), \qquad \hat{A} = \tilde{D}^{-1/2} \tilde{A} \tilde{D}^{-1/2},$$
+
+and the decoder reconstructs the centre's own attributes. The score of a window is the
+distance between the centre and its reconstruction,
+
+$$s(x) = \sqrt{\tfrac{1}{d} \lVert \hat{x} - x \rVert^{2}} .$$
+
+### Training examples
+
+Training examples are constructed as follows. Each training window — including noise points
+— is treated as a query and excluded from its own context. It is attached to the contextual
+subgraph using the cluster of its nearest non-noise object, ensuring that training examples
+are generated identically to those at inference time.
+
+### Distributed fit
+
+Training examples are sharded by cluster, so a replica owns whole clusters and never needs a
+member it does not hold. Four replicas then fit the same network with
+`DistributedDataParallel` over gloo and gradients are averaged at every step.
+
+### Baselines
+
+The **plain autoencoder** is DENCAD with $\hat{A} = I$: same architecture, hyperparameters,
+and score, fitted on single windows, which isolates the contribution of the graph. It is
+useful to determine if the neighbourhood graph structure is really providing value to the
+anomaly detection task. **K-Means** scores the distance to the nearest centroid, with $k$
+selected via validation. **DENCAST distance** uses density-based clustering but omits the
+autoencoder, scoring the distance to the closest clustered object. The **graph autoencoder**
+is DENCAD without the clustering: it applies the same network over the complete $L$-hop
+neighbourhood of the window, thereby matching the exact output that a full-graph convolution
+would produce at the centre.
+
+**Comparison.** We present threshold-free measures as our primary comparison, alongside
+window-level precision and recall, while reporting the number of covered anomalous episodes
+as a supplementary information.
+
+### Evaluation
+
+All five anomaly detectors are thresholded by the same technique that uses the sigma rule.
+It is divided in three phases:
+
+$$z(x) = \frac{s(x) - \mu}{\sigma}, \qquad \text{flag when } z(x) > k .$$
+
+In phase one, the model is fitted on the training set, $\mu$ and $\sigma$ are measured on
+its training scores, and $k$ is chosen among ten candidates between $0.5$ and $4$ via
+validation $F_1$; for the two autoencoders, the epoch count is selected in the same phase
+using early stopping on validation average precision, with a patience of $20$ and a maximum
+of $200$ epochs. In phase two, the model is refitted on the combined training and validation
+windows for that epoch count (normal or contaminated depending on the specific experiment),
+and $\mu$ and $\sigma$ are recomputed on this larger set. Finally, in phase three, the test
+set is used to compute the final measures for the comparison.
+
+The hyperparameter grids vary significantly in size, requiring different search strategies.
+K-Means has a single hyperparameter, the number of centroids $k \in \{2, 4, 8, 16, 32, 64\}$,
+and all six values are evaluated; the plain autoencoder comprises sixteen combinations and
+is likewise tested exhaustively. The remaining grids (DENCAST distance, DENCAD, and graph
+autoencoder) are too large; thus, due to computational constraints, fifteen configurations
+were sampled at random from each. In every case, the final configuration is selected based
+on validation average precision.
+
+The searched axes are $b \in \{16, 24\}$, permutations $\in \{10, 20\}$, band
+$\in \{20, 50\}$, $w / \varepsilon \in \{1, 2\}$, `min_pts` $\in \{10, 5\}$ for the graph;
+hidden $\in \{64, 128\}$, latent $\in \{16, 32\}$, layers $\in \{2, 3\}$ and learning rate
+$\in \{10^{-3}, 3 \cdot 10^{-3}\}$ for the autoencoder. Batch size 128, patience 20, a
+ceiling of 200 epochs, four replicas, Adam and one seed are fixed.
+
+**Metrics.** Average precision and ROC-AUC are reported as the primary comparison because
+they are threshold-free. Precision, recall, and $F_1$ are evaluated at the *window* level,
+while the number of anomalous segments covered at least once is reported separately.
+
+**Implementation.** PySpark 3.5.9 on a local four-worker session with the PyTorch gloo
+backend, hosted on a single machine with four cores and 16 GB of memory. The pipeline
+comprises 66 DVC stages.
+
+## Results
+
+Test average precision, best per row in bold. Five detectors, six processed datasets, one
+seed.
+
+| | DENCAD | graph AE | plain AE | DENCAST $\sigma$ | K-Means |
+|---|---:|---:|---:|---:|---:|
+| SWaT | 0.8484 | 0.8499 | **0.8545** | 0.8197 | 0.8340 |
+| HAI | 0.5734 | 0.5786 | **0.5972** | 0.5245 | 0.5532 |
+| ESA rare | 0.2313 | 0.2307 | **0.2424** | 0.2280 | 0.2255 |
+| ESA rare, cont. | 0.1708 | **0.1907** | 0.1671 | 0.1681 | 0.1623 |
+| ESA | **0.0533** | 0.0384 | 0.0409 | 0.0390 | 0.0315 |
+| ESA, cont. | **0.0263** | 0.0245 | 0.0253 | 0.0247 | 0.0246 |
+
+Test ROC-AUC, best per row in bold. Five detectors, six processed datasets, one seed.
+
+| | DENCAD | graph AE | plain AE | DENCAST $\sigma$ | K-Means |
+|---|---:|---:|---:|---:|---:|
+| SWaT | 0.9239 | 0.9257 | **0.9277** | 0.9066 | 0.9094 |
+| HAI | 0.8393 | **0.8525** | 0.8406 | 0.8027 | 0.8174 |
+| ESA rare | 0.6515 | 0.6510 | **0.6670** | 0.6543 | 0.6449 |
+| ESA rare, cont. | 0.6341 | **0.6519** | 0.6405 | 0.6270 | 0.6098 |
+| ESA | 0.6109 | 0.6132 | 0.5932 | **0.6290** | 0.6066 |
+| ESA, cont. | 0.5965 | 0.6041 | **0.6063** | 0.5964 | 0.5936 |
+
+Overall, autoencoder-based detectors slightly outperform distance-based methods (K-Means and
+DENCAST distance) across nearly all datasets under both metrics, while little to no
+performance difference is observed between DENCAST distance and K-Means.
+
+Among the autoencoders, no clear overall winner emerges, and incorporating the graph does
+not always pay for itself: the plain autoencoder, which operates on single observations
+without graph structure, achieves the highest score on three of the six datasets under
+either metric. DENCAD achieves the highest average precision on both ESA variants that
+consider rare events as legitimate — where all detectors yield scores between $0.025$ and
+$0.053$ — and its margin is substantially wider than indicated by ROC-AUC.
+
+Threshold-dependent test metrics of the best-performing detector on each variant, selected
+by $F_1$. Segments is the number of annotated episodes touched out of the total.
+
+| | precision | recall | $F_1$ | segments |
+|---|---:|---:|---:|---:|
+| SWaT | 0.8231 | 0.7244 | 0.7706 | 10/13 |
+| HAI | 0.7515 | 0.4855 | 0.5899 | 10/19 |
+| ESA rare | 0.2301 | 0.3807 | 0.2869 | 20/24 |
+| ESA rare, cont. | 0.1806 | 0.4572 | 0.2590 | 20/24 |
+| ESA | 0.0963 | 0.1100 | 0.1027 | 7/15 |
+| ESA, cont. | 0.0386 | 0.1112 | 0.0573 | 8/15 |
+
+## Conclusion
+
+For anomaly detection over multivariate sensor telemetry from industrial plants and
+spacecraft, reconstruction-based models prove to be slightly better than distance-based
+methods.
+
+No clear performance difference was observed between K-Means and DENCAST distance. Although
+DENCAST theoretically yields superior clustering, the distance to an individual cluster
+object might be less informative than the distance to a centroid; however, these
+explanations remain speculative.
+
+The construction of a neighbourhood graph does not consistently justify its computational
+overhead, and its overall utility appears to be highly dataset-dependent. In this study,
+DENCAD does not exhibit a performance advantage that offsets the cost of graph building.
+However, this finding specifically pertains to graphs constructed via locality-sensitive
+hashing (LSH) in feature space; evaluating DENCAD on inherently graph-structured datasets
+remains an important avenue for future work.
+
+One limitation bounds the comparison: the hyperparameter grids are explored unequally. While
+the plain autoencoder and K-Means algorithms exhaustively enumerate all their combinations,
+DENCAD samples fifteen at random due to the severe combinatorial explosion of its
+hyperparameter space. Consequently, DENCAD's current figures represent a lower bound on its
+potential performance, leaving open the possibility that a fully searched grid could close
+or reverse the gap. Although conducting an exhaustive search is computationally expensive
+and highlights DENCAD's vulnerability to hyperparameter explosion, evaluating the complete
+grid remains a worthwhile endeavor for future work.
+
+All five detectors compute an *unweighted* Euclidean distance within the same feature space
+— whether to a centroid, a core object, or between a window and its reconstruction —
+meaning that while the context and model architecture varied, the aggregation method
+remained constant. Consequently, every feature contributes equally to the distance
+calculation. Scaling each feature's error by its typical magnitude during training is
+identified as an important modification for future work, and all five detectors should be
+re-evaluated under this weighted formulation.
+
+## References
+
+1. Roberto Corizzo, Gianvito Pio, Michelangelo Ceci, and Donato Malerba. DENCAST:
+   distributed density-based clustering for multi-target regression. *Journal of Big Data*,
+   6:43, 2019.
+2. Martin Ester et al. A density-based algorithm for discovering clusters in large spatial
+   databases with noise. In *KDD*, pages 226–231, 1996.
+3. Moses S. Charikar. Similarity estimation techniques from rounding algorithms. In *STOC*,
+   pages 380–388, 2002.
+4. Mayur Datar, Nicole Immorlica, Piotr Indyk, and Vahab S. Mirrokni. Locality-sensitive
+   hashing scheme based on $p$-stable distributions. In *SoCG*, pages 253–262, 2004.
+5. Deepak Ravichandran, Patrick Pantel, and Eduard Hovy. Randomized algorithms and NLP:
+   using locality sensitive hash functions for high speed noun clustering. In *ACL*, pages
+   622–629, 2005.
+6. Kaize Ding et al. Deep anomaly detection on attributed networks. In *SDM*, pages
+   594–602, 2019.
+7. Thomas N. Kipf and Max Welling. Semi-supervised classification with graph convolutional
+   networks. In *ICLR*, 2017.
+8. William L. Hamilton, Rex Ying, and Jure Leskovec. Inductive representation learning on
+   large graphs. In *NeurIPS*, pages 1024–1034, 2017.
+9. Wei-Lin Chiang et al. Cluster-GCN: an efficient algorithm for training deep and large
+   graph convolutional networks. In *KDD*, pages 257–266, 2019.
+10. Aditya P. Mathur and Nils Ole Tippenhauer. SWaT: a water treatment testbed for research
+    and training on ICS security. In *CySWater*, pages 31–36, 2016.
+11. Hyeok-Ki Shin et al. HAI 1.0: HIL-based augmented ICS security dataset. In *USENIX
+    CSET*, 2020.
+12. Krzysztof Kotowski et al. European Space Agency benchmark for anomaly detection in
+    satellite telemetry. *arXiv preprint arXiv:2406.17826*, 2024.
