@@ -145,7 +145,9 @@ vector $a_i \in \mathbb{R}^{d}$ of independent standard normal entries; projecti
 gives the scalar $a_i \cdot x$; that line is cut into buckets of width $w$, shifted by a
 random offset $c_i$; and the integer $h_i(x)$ says which bucket $x$ falls into,
 
-$$h_i(x) = \left\lfloor \frac{a_i \cdot x + c_i}{w} \right\rfloor, \qquad a_i \sim \mathcal{N}(0, I), \quad c_i \sim \mathcal{U}[0, w),$$
+```math
+h_i(x) = \left\lfloor \frac{a_i \cdot x + c_i}{w} \right\rfloor, \qquad a_i \sim \mathcal{N}(0, I), \quad c_i \sim \mathcal{U}[0, w),
+```
 
 so the signature of $x$ is $(h_1(x), \dots, h_b(x))$. This is the $p$-stable construction
 with $p = 2$: the projections of two windows differ by a Gaussian whose deviation is their
@@ -184,7 +186,9 @@ and the per-query minima are combined.
 **Step 1: the problem.** A query is a vector $x_q \in \mathbb{R}^{d}$ and the pool is a set
 $P$ of $n_p$ clustered objects, each with its own vector. The placement looks for
 
-$$\pi(q) \;=\; \arg\min_{p \in P} \lVert x_q - x_p \rVert .$$
+```math
+\pi(q) = \arg\min_{p \in P} \lVert x_q - x_p \rVert .
+```
 
 **Step 2: the naive computation.** Build the full matrix
 $D \in \mathbb{R}^{n_q \times n_p}$ with $D_{qp} = \lVert x_q - x_p \rVert$ and take the
@@ -194,12 +198,16 @@ minimum of each row.
 $P = P_1 \sqcup P_2 \sqcup \dots \sqcup P_s$, and compute for each block the partial minimum
 of a query,
 
-$$m_j(q) \;=\; \min_{p \in P_j} \lVert x_q - x_p \rVert .$$
+```math
+m_j(q) = \min_{p \in P_j} \lVert x_q - x_p \rVert .
+```
 
 **Step 4: minimum combination.** The minimum over a disjoint union is the minimum of the
 partial minima,
 
-$$\min_{p \in P} \lVert x_q - x_p \rVert \;=\; \min_{j = 1, \dots, s} m_j(q) .$$
+```math
+\min_{p \in P} \lVert x_q - x_p \rVert = \min_{j = 1, \dots, s} m_j(q) .
+```
 
 **Step 5: split the queries as well.** With $Q = Q_1 \sqcup \dots \sqcup Q_r$ there are
 $r \times s$ block pairs $(Q_i, P_j)$, and each is independent of the others.
@@ -218,12 +226,16 @@ the central target node.
 
 The encoder is a graph convolution with the symmetric normalisation of [7],
 
-$$H^{(l+1)} = \sigma\!\left( \hat{A} H^{(l)} W^{(l)} \right), \qquad \hat{A} = \tilde{D}^{-1/2} \tilde{A} \tilde{D}^{-1/2},$$
+```math
+H^{(l+1)} = \sigma\left( \hat{A} H^{(l)} W^{(l)} \right), \qquad \hat{A} = \tilde{D}^{-1/2} \tilde{A} \tilde{D}^{-1/2},
+```
 
 and the decoder reconstructs the centre's own attributes. The score of a window is the
 distance between the centre and its reconstruction,
 
-$$s(x) = \sqrt{\tfrac{1}{d} \lVert \hat{x} - x \rVert^{2}} .$$
+```math
+s(x) = \sqrt{\tfrac{1}{d} \lVert \hat{x} - x \rVert^{2}} .
+```
 
 ### Training examples
 
@@ -259,7 +271,9 @@ as a supplementary information.
 All five anomaly detectors are thresholded by the same technique that uses the sigma rule.
 It is divided in three phases:
 
-$$z(x) = \frac{s(x) - \mu}{\sigma}, \qquad \text{flag when } z(x) > k .$$
+```math
+z(x) = \frac{s(x) - \mu}{\sigma}, \qquad \text{flag when } z(x) > k .
+```
 
 In phase one, the model is fitted on the training set, $\mu$ and $\sigma$ are measured on
 its training scores, and $k$ is chosen among ten candidates between $0.5$ and $4$ via
