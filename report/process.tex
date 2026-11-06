@@ -1,0 +1,239 @@
+\documentclass{article}
+
+\usepackage{arxiv}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{amsmath}
+\usepackage{microtype}      % microtypography
+
+\title{A CRISP-DM Description for Anomaly Detection in Industrial and Satellite Telemetry}
+
+\author{
+ Alessandro Bevilacqua \\
+  Department of Computer Science \\
+  University of Bari Aldo Moro \\
+  Bari, Italy \\
+  \texttt{a.bevilacqua11@studenti.uniba.it} \\
+}
+
+\begin{document}
+\maketitle
+
+This document reports the \emph{process}: the decisions made in each CRISP-DM phase, 
+their rationale, and the artifacts passed to subsequent stages. 
+Crucially, every decision described below is encoded in a DVC pipeline, ensuring that each step can be verified directly against its resulting artifact.
+
+\section{Business Understanding}
+
+Industrial facilities and spacecraft systems generate continuous multivariate telemetry data, where operational faults are rare but incur extremely high costs.
+
+\paragraph{Business objectives.} 
+The primary operational objectives reflect real-world monitoring requirements. 
+First, the detection system must identify anomalies in real time, 
+enabling preventive intervention before catastrophic failure occurs rather than post-hoc analysis. 
+Second, it must maintain a low false alarm rate to minimize operator fatigue, given that operational attention is a strictly 
+resource in control rooms. 
+Third, it must maintain a low missed anomaly rate, since an anomaly can cause significant damage to downstream equipment.
+
+
+\paragraph{Business success criteria.} 
+In the absence of domain experts for direct evaluation, operational requirements are translated into quantitative metrics.
+The first metric measures the proportion of annotated failure episodes identified by the model. 
+The second metric assesses precision by measuring the ratio of true anomalies among all raised alarms. 
+Since both metrics depend on the detection threshold, they are reported alongside threshold-independent performance measures to provide an unbiased comparison.
+
+\paragraph{Data mining goals.} 
+The operational objectives translate into two main technical goals. 
+The first is to construct an \emph{inductive} model of normality capable of scoring incoming real-time observations without requiring re-training. 
+The second and central research goal is to empirically assess whether an observation's structural neighbourhood derived from clustering provides informative 
+context that an isolated algorithm cannot capture. 
+The objective is to provide a rigorous, defensible answer to this question,
+where a negative finding represents a valid scientific result.
+
+This research question dictates the experimental setup. The proposed graph-based detector (DENCAD) is evaluated against four controlled baselines:
+\begin{enumerate}
+    \item Plain autoencoder: The identical network architecture with context removed (reducing adjacency to the identity matrix);
+    \item Graph autoencoder: The same network evaluated over an $L$-hop neighbourhood without clustering;
+    \item K-Means: A centroid-based baseline;
+    \item DENCAST distance: A density-based clustering baseline using the nearest clustered object distance.
+\end{enumerate}
+
+\paragraph{Project plan.} 
+The execution follows these structured phases: 
+analyzing raw data sources and labels; 
+constructing training, validation, and test splits across labelling scenarios using a temporal approach;
+fitting models on the training set; 
+calibrating hyperparameters on the validation set; 
+refitting all five detectors using the combined train-validation data; 
+and evaluating final performance on an isolated test set. 
+Every phase is fully versioned and tracked via a DVC pipeline to ensure reproducibility.
+
+\section{Data understanding}
+
+Three public datasets were selected to ensure that the conclusions do not rely on a single operational regime:
+two industrial testbeds with annotated physical attacks and one spacecraft telemetry archive containing real operational faults. 
+Each dataset was profiled prior to pipeline development to address three fundamental questions: 
+feature composition, ground-truth label structure, and the exact definition of normal versus anomalous behavior.
+
+\paragraph{SWaT: The water treatment testbed.} A single tabular recording at one reading per
+second, labelled normal or under attack over a campaign of staged intrusions. Which
+channels hold a discrete state rather than a measurement is declared by the instrument
+naming convention, so the distinction is read from the documentation.
+The profiling's substantive finding is
+that some actuators are never recorded at all during the earliest part of the recording,
+which is also the part that will become the training period: a property invisible in the
+dataset as a whole and visible only once the split is contemplated.
+
+\paragraph{HAI: The hardware-in-the-loop dataset.} Several recordings and a separate label file
+to be joined on their timestamps, again at one reading per second. The discrete channels
+are taken from the table in the dataset's own technical documentation.
+Profiling then showed that most of the declared discrete channels never
+vary at all, and that several more are one selector read under different names, so only a
+few of them survive to carry any information.
+
+\paragraph{ESA: The spacecraft archive.} The only one of the three that is not a table to begin
+with. Each channel is a separate serialised series on its own irregular index, sampled at
+a rate that differs from channel to channel, and the labels are not a column but a set of
+annotated intervals, each attached to a particular channel and carrying a category.
+The categories separate anomalies from \emph{rare events}: unusual but
+legitimate behaviour, annotated precisely so that it would not be counted as a fault. 
+The profiling established a heavy duplication among the channels, with many pairs that are plainly the same quantity reported twice.
+
+\paragraph{ESA: Selecting target mission.} The ESA telemetry archive encompasses multiple missions, 
+requiring a deliberate selection strategy.
+Given the strict chronological nature of the train-validation-test split, 
+a mission is viable only if a sufficient number of annotated anomaly episodes occur \emph{after} the initial training window. 
+Missions where anomalies are clustered within the early operational phases fail this criterion regardless of total data volume, 
+as the critical parameter is not total telemetry count but the availability of distinct anomalous episodes across validation and test partitions. 
+Consequently, Mission 1 was selected for this study and all the others were discarded.
+
+\section{Data preparation}
+
+Each dataset is processed through a dedicated preprocessor.
+Two abstract base classes define the general preprocessing pipeline and common operations, 
+while specific subclasses extend them to implement dataset-customized transformations.
+
+\paragraph{Assembly.} Tabular datasets undergo deduplication,
+chronological sorting, and timestamp-based concatenation where recordings span multiple files.
+Conversely, the ESA telemetry archive requires temporal resampling: 
+all channels are mapped onto a uniform time grid via zero-order hold interpolation—holding each channel's latest value until a new observation is logged—while 
+continuous annotation intervals are converted into discrete per-row labels. 
+The sampling grid interval is thus treated as an explicit modeling choice.
+
+\paragraph{Cleaning: which columns survive.} At assembly, rows null in every feature are
+dropped, as are rows identical to an earlier one including the timestamp. The processing
+step then applies three column filters in a fixed order, each decided on the training rows.
+First, any column missing more than a set share of them is dropped, which is what removes
+channels never recorded during the training period. Second, any column constant across the
+whole training split is discarded. Third, a redundancy filter removes one of every
+pair that is the same quantity reported twice, judged by linear correlation for numeric
+pairs and by Cram\'er's $V$ for categorical ones, both against a threshold just below
+unity. 
+Which of the two copies survives is decided rather than left to column order:
+numeric columns are considered in order of decreasing number of distinct values and
+categorical ones in order of decreasing normalised entropy.
+
+\paragraph{Imputation.} The fill values are fitted only after those
+drops, on the training rows that remain: the median of each numeric column and the mode of
+each declared categorical one.
+
+\paragraph{Data splitting.} Data splitting is performed strictly chronologically across all three datasets,
+ensuring that the validation and test sets temporally succeed the training period and that no sliding instances overlap across partitions.
+
+\paragraph{Windowing.} Readings are aggregated into non-overlapping windows of a fixed
+number of readings, chosen per dataset, and the window rather than the reading is the unit
+that is scored and labelled: a window is positive if any of its readings is. Numeric
+channels contribute their mean, standard deviation, minimum and maximum, discrete ones
+their mode, entropy, number of distinct values and share of the dominant value.
+Additionally, windows containing fewer than half of the expected readings are discarded.
+
+
+\paragraph{Scaling.} Window features are standardised with the mean and deviation of the
+training windows.
+
+\paragraph{Training composition and labeling regimes.} 
+The training splits for the SWaT and HAI datasets contain no anomalous instances, 
+providing a purely nominal baseline. 
+Conversely, the training partition of the ESA telemetry archive contains residual anomaly occurrences. 
+To evaluate the impact of training contamination, two experimental setups are established: 
+one in which these anomalous instances are removed prior to training, and another in which they are retained.
+
+Regarding target annotations, 
+SWaT and HAI enforce a strict binary scheme (normal versus anomalous). 
+The ESA dataset, by contrast, differentiates between operational anomalies and rare system events. 
+To assess label sensitivity, both interpretations are evaluated: one treating rare events as normal operating conditions, 
+and the other categorizing them as anomalous episodes.
+Combined with the two training contamination choices, these target definitions formulate four distinct pipeline variants
+for the ESA dataset, each implemented as a dedicated DVC stage.
+
+\begin{table}[t]
+  \caption{The four variants the ESA dataset is prepared in.}
+  \centering
+  \small
+  \begin{tabular}{lll}
+    \toprule
+    Positive class & Training split \\
+    \midrule
+    anomalies and rare events & positives removed \\
+    anomalies and rare events & positives kept\\
+    anomalies only            & positives removed \\
+    anomalies only            & positives kept    \\
+    \bottomrule
+  \end{tabular}
+  \label{tab:variants}
+\end{table}
+
+\section{Modelling}
+
+Five distinct detectors are fitted on identical windowed input representations. 
+Each model computes a Euclidean distance-based anomaly score, 
+which is subsequently thresholded using the $3\sigma$ rule. 
+Each detector is associated with a dedicated hyperparameter space.
+Owing to compute and time constraints within the single-machine execution envelope, 
+the parameter spaces for DENCAD, the DENCAST distance baseline, and the graph autoencoder are evaluated via random search, 
+sampling 15 configurations per model. 
+Hyperparameter search is conducted on the validation split using models trained exclusively on training data, 
+optimized against the threshold-free Average Precision (AP) metric.
+
+Following hyperparameter selection, 
+each detector undergoes a final refitting step on the merged training and validation splits 
+before being evaluated once on the isolated test set. 
+Final comparisons are conducted using both threshold-free metrics: Average Precision (AP) and Area Under the Receiver Operating Characteristic Curve (ROC-AUC). 
+
+Overall, autoencoder-based detectors slightly outperform distance-based baselines 
+(K-Means and DENCAST distance) across nearly all dataset configurations under both metrics, 
+whereas performance differences between DENCAST distance and K-Means remain marginal. 
+Among the autoencoder-based architectures, no single model strictly dominates, 
+and incorporating graph-level topology does not consistently justify its added complexity:
+the plain autoencoder, which operates on isolated observations without graph structure, 
+achieves the top performance on three of the six dataset variants under both metrics. 
+Nevertheless, DENCAD secures the highest Average Precision on both ESA scenarios where rare events are treated as nominal,
+demonstrating a performance gain over isolated baselines that is substantially more pronounced in AP than indicated by ROC-AUC.
+
+\section{Evaluation}
+\label{sec:eval}
+
+\paragraph{Synthesis of empirical findings.}
+
+All five evaluated models demonstrate suitability for the anomaly detection task, 
+with autoencoder-based architectures exhibiting a slight overall performance advantage over distance-based baselines. 
+However, the additional structural and computational complexity introduced by DENCAD does not 
+yield a consistent or substantial performance gain to justify its overhead in these operational settings.
+
+\section{Deployment}
+
+The deliverable is not a serialised model but a pipeline that can rebuild one. It is a DVC
+graph with one preprocessing and one splitting stage per dataset, one processing stage per
+variant, and per variant a final fit for each detector preceded by its hyperparameter search. 
+Every stage declares its code, data and parameter dependencies, so the lock file
+records which inputs produced which report and a stale result cannot be mistaken for a
+current one. All tunable quantities live in a single parameter file, so adding a variant is an entry in that file rather than a
+change to the code. JSON reports are written as artefacts and the
+dataset profiling lives in executed notebooks.
+
+\end{document}
